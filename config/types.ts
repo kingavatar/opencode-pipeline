@@ -31,6 +31,7 @@ export interface PipelineGitConfig {
 }
 
 export interface PipelineConfig {
+  debug: boolean
   storage: PipelineStorageConfig
   models: PipelineModelConfig
   workflow: PipelineWorkflowConfig
@@ -38,6 +39,7 @@ export interface PipelineConfig {
 }
 
 export const DEFAULT_CONFIG: PipelineConfig = {
+  debug: false,
   storage: {
     root: "",
     maxHistoryEntries: 50,

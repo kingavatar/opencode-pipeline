@@ -170,8 +170,8 @@ Create `~/.config/opencode/pipeline-config.jsonc` (global) or `.opencode/pipelin
 
 ```jsonc
 {
+  "debug": false,
   "storage": {
-    "root": "~/.local/share/opencode/pipeline",
     "maxHistoryEntries": 50
   },
   "models": {
@@ -195,10 +195,21 @@ Create `~/.config/opencode/pipeline-config.jsonc` (global) or `.opencode/pipelin
   "git": {
     "autoBranch": true,
     "branchPrefix": "pipeline",
-    "autoCleanupBranches": true
+    "autoCleanupBranches": true,
+    "baseBranch": "main"
   }
 }
 ```
+
+### Configuration Options
+
+| Key | Default | Description |
+|---|---|---|
+| `debug` | `false` | Enable `[pipeline]` debug logs at startup |
+| `models.*` | DeepSeek Flash/Pro | Override any agent's model (e.g. swap coder to a local model) |
+| `git.baseBranch` | `main` | Base branch to merge pipeline branches into |
+| `git.autoBranch` | `true` | Create isolated git branch per session |
+| `storage.maxHistoryEntries` | 50 | Max session entries in HISTORY.md before pruning |
 
 ### Workflow Toggles
 

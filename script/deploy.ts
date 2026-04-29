@@ -1,16 +1,19 @@
-import { $ } from "bun"
 import { join } from "path"
-import { mkdir, readFile, writeFile } from "fs/promises"
+import { readFile, writeFile, rm } from "fs/promises"
+import { $ } from "bun"
 
 const home = process.env.HOME || process.env.USERPROFILE || "~"
-const pluginDir = join(home, ".config", "opencode", "plugins")
 const configFile = join(home, ".config", "opencode", "opencode.json")
 
-// Copy built plugin
-await mkdir(pluginDir, { recursive: true })
-await $`cp dist/index.js ${pluginDir}/pipeline.js`
+// Build
+await $`bun run script/build.ts`
 
-console.log(`Deployed to ${pluginDir}/pipeline.js`)
+// Remove flat plugin file (auto-discovery causes double-load)
+const flatFile = join(home, ".config", "opencode", "plugins", "pipeline.js")
+try {
+  await rm(flatFile, { force: true })
+  console.log("Removed flat plugin file (file:/// is the single load path)")
+} catch {}
 
 // Ensure file:/// entry exists in opencode.json plugin array
 try {
@@ -29,5 +32,7 @@ try {
   }
 } catch (err) {
   console.error("Could not update opencode.json:", err)
-  console.log("Add manually: \"file:///home/emperor/dev/personal/opencode-pipeline/dist/index.js\"")
+  console.log(`Add manually: "${pluginUri}"`)
 }
+
+console.log("Deployed via file:/// only (no flat auto-discovery)")
