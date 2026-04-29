@@ -17,7 +17,9 @@
     "dist/"
   ],
   "scripts": {
-    "build": "bun run script/build.ts"
+    "build": "bun run script/build.ts",
+    "deploy": "bun run build && bun run script/deploy.ts",
+    "test": "bun test"
   },
   "keywords": [
     "opencode",
