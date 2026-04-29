@@ -100,6 +100,44 @@ describe("createSessionHooks", () => {
     await hooks.onSessionCreated("test-id")
   })
 
+  it("autoBranch=true with non-git directory returns early silently", async () => {
+    // Create a temp directory without git
+    const { $ } = require("bun")
+    const tmpDir = `/tmp/pipeline-test-${Date.now()}`
+    const { mkdir, rm } = require("fs/promises")
+    await mkdir(tmpDir, { recursive: true })
+
+    try {
+      const { createSessionHooks } = require("../hooks/session-lifecycle")
+      const hooks = createSessionHooks(
+        { worktree: tmpDir, directory: tmpDir },
+        { autoBranch: true, branchPrefix: "p", autoCleanup: true, baseBranch: "main", maxHistoryEntries: 50 },
+      )
+      // Should not throw, should not log errors
+      await hooks.onSessionCreated("test-id")
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true })
+    }
+  })
+
+  it("onSessionIdle returns early when not a git repo", async () => {
+    const { createSessionHooks } = require("../hooks/session-lifecycle")
+    const hooks = createSessionHooks(
+      { worktree: "/tmp/test", directory: "/tmp/test" },
+      { autoBranch: true, branchPrefix: "p", autoCleanup: true, baseBranch: "main", maxHistoryEntries: 50 },
+    )
+    await hooks.onSessionIdle("test-id")
+  })
+
+  it("onSessionDeleted returns early when not a git repo", async () => {
+    const { createSessionHooks } = require("../hooks/session-lifecycle")
+    const hooks = createSessionHooks(
+      { worktree: "/tmp/test", directory: "/tmp/test" },
+      { autoBranch: true, branchPrefix: "p", autoCleanup: true, baseBranch: "main", maxHistoryEntries: 50 },
+    )
+    await hooks.onSessionDeleted("test-id")
+  })
+
   it("autoCleanup=false returns immediately from onSessionIdle", async () => {
     const { createSessionHooks } = require("../hooks/session-lifecycle")
     const hooks = createSessionHooks(

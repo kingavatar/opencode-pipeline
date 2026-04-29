@@ -20,6 +20,12 @@ interface HooksOptions {
   maxHistoryEntries: number
 }
 
+async function isGitRepo(cwd: string): Promise<boolean> {
+  if (!cwd) return false
+  const result = await $`git -C ${cwd} rev-parse --is-inside-work-tree 2>/dev/null`.nothrow().quiet()
+  return result.exitCode === 0
+}
+
 export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
   const sessionBranches = new Map<string, string>()
 
@@ -28,6 +34,8 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
       if (!opts.autoBranch) return
 
       const cwd = ctx.worktree || ctx.directory
+      if (!(await isGitRepo(cwd))) return
+
       const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "")
       const shortId = sessionID.slice(0, 8)
       const branchName = `${opts.branchPrefix}/${timestamp}-${shortId}`
@@ -79,6 +87,7 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
       const cwd = ctx.worktree || ctx.directory
       const branchName = sessionBranches.get(sessionID)
       if (!branchName) return
+      if (!(await isGitRepo(cwd))) return
 
       try {
         const baseExists = (await $`git -C ${cwd} rev-parse --verify ${opts.baseBranch} 2>/dev/null`.nothrow().quiet()).exitCode === 0
@@ -105,6 +114,7 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
       const cwd = ctx.worktree || ctx.directory
       const branchName = sessionBranches.get(sessionID)
       if (!branchName) return
+      if (!(await isGitRepo(cwd))) return
 
       try {
         const baseExists = (await $`git -C ${cwd} rev-parse --verify ${opts.baseBranch} 2>/dev/null`.nothrow().quiet()).exitCode === 0

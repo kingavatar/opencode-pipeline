@@ -8,20 +8,39 @@ Built on DeepSeek V4 API (Pro + Flash). Flash is 12x cheaper on output — the p
 
 ## Installation
 
-### Local (for development)
+### One command
+
+```bash
+cd ~/dev/personal/opencode-pipeline && bun run deploy
+```
+
+This builds the plugin, copies it to `~/.config/opencode/plugins/pipeline.js`, and adds the `file:///` entry to your `opencode.json` plugin array.
+
+### Manual
 
 ```bash
 cd ~/dev/personal/opencode-pipeline
-bun run build
-cp dist/index.js ~/.config/opencode/plugins/opencode-pipeline/index.js
+bun install
+bun run deploy
 ```
+
+Then add to `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "plugin": [
+    "file:///home/emperor/dev/personal/opencode-pipeline/dist/index.js"
+  ]
+}
+```
+
+For local filesystem plugins, OpenCode uses `file:///` URIs in the `plugin` array. The flat file copy to `~/.config/opencode/plugins/pipeline.js` serves as a secondary load path for auto-discovery.
 
 Restart OpenCode. The `Pipeline Orchestrator` agent appears in your Tab cycle.
 
 **To update after changes:**
 ```bash
-cd ~/dev/personal/opencode-pipeline && bun run build
-cp dist/index.js ~/.config/opencode/plugins/opencode-pipeline/index.js
+cd ~/dev/personal/opencode-pipeline && bun run deploy
 ```
 
 ### npm (future)
@@ -205,7 +224,7 @@ Pipeline state persists to `~/.local/share/opencode/pipeline/<workspace-id>/`:
 On session start: creates branch `pipeline/<YYYYMMDD>-<short-id>` to isolate work.
 On session completion: merges back to main, appends summary to HISTORY.
 
-Multiple sessions in the same workspace never collide.
+Git branch isolation only activates in directories that are git repositories. In non-git directories, all git operations silently skip — no errors, no noise. Multiple sessions in the same workspace never collide.
 
 ## Cost Model
 
