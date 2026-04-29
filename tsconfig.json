@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "declarationDir": "dist",
+    "outDir": "dist",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["bun-types"]
+  },
+  "include": [
+    "index.ts",
+    "agents/**/*.ts",
+    "commands/**/*.ts",
+    "hooks/**/*.ts",
+    "storage/**/*.ts",
+    "config/**/*.ts"
+  ],
+  "exclude": ["dist", "node_modules", "tools/**/*.ts"]
+}
