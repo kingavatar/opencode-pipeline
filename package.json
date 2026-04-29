@@ -19,6 +19,7 @@
   "scripts": {
     "build": "bun run script/build.ts",
     "deploy": "bun run build && bun run script/deploy.ts",
+    "uninstall": "bun run script/uninstall.ts",
     "test": "bun test"
   },
   "keywords": [

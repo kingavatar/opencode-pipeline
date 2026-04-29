@@ -43,6 +43,18 @@ Restart OpenCode. The `Pipeline Orchestrator` agent appears in your Tab cycle.
 cd ~/dev/personal/opencode-pipeline && bun run deploy
 ```
 
+### Uninstall
+
+```bash
+cd ~/dev/personal/opencode-pipeline && bun run uninstall
+```
+
+This removes the plugin file and the `file:///` entry from `opencode.json`.
+Pipeline storage (`~/.local/share/opencode/pipeline/`) is preserved — remove manually if desired:
+```bash
+rm -rf ~/.local/share/opencode/pipeline
+```
+
 ### npm (future)
 
 ```
