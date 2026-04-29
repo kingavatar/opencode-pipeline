@@ -1,31 +1,137 @@
 import { describe, it, expect } from "bun:test"
 import { createAllAgents } from "../agents"
+import { perms } from "../agents/helpers"
 import { DEFAULT_CONFIG } from "../config/types"
-import { NO_FLUFF, TECH_STACK_BASELINE_NOTICE, CIRCUIT_BREAKER, LLD_ESCAPE_HATCH, STRICT_GROUNDING } from "../agents/prompt-utils"
+import {
+  NO_FLUFF,
+  TECH_STACK_BASELINE_NOTICE,
+  CIRCUIT_BREAKER,
+  LLD_ESCAPE_HATCH,
+  STRICT_GROUNDING,
+} from "../agents/prompt-utils"
+
+describe("perms helper", () => {
+  it("returns the same object reference (identity)", () => {
+    const obj = { read: "allow", edit: "deny" } as Record<string, unknown>
+    expect(perms(obj)).toBe(obj)
+  })
+
+  it("passes through empty object", () => {
+    expect(perms({})).toEqual({})
+  })
+
+  it("passes through null (no runtime guard)", () => {
+    expect(perms(null as unknown as Record<string, unknown>)).toBe(null)
+  })
+
+  it("passes through undefined", () => {
+    expect(perms(undefined as unknown as Record<string, unknown>)).toBe(undefined)
+  })
+
+  it("passes through string (no type guard)", () => {
+    expect(perms("hello" as unknown as Record<string, unknown>)).toBe("hello")
+  })
+
+  it("passes through number", () => {
+    expect(perms(42 as unknown as Record<string, unknown>)).toBe(42)
+  })
+
+  it("passes through array", () => {
+    const arr = ["a", "b"]
+    expect(perms(arr as unknown as Record<string, unknown>)).toBe(arr)
+  })
+
+  it("passes nested permission config with task scoping", () => {
+    const obj = {
+      edit: "allow",
+      bash: { "*": "ask", "git status": "allow" },
+      task: { "*": "deny", coder: "allow" },
+      question: "allow",
+    }
+    expect(perms(obj)).toBe(obj)
+  })
+})
+
+describe("prompt-utils constants", () => {
+  it("all constants are non-empty strings", () => {
+    const constants = [NO_FLUFF, TECH_STACK_BASELINE_NOTICE, CIRCUIT_BREAKER, LLD_ESCAPE_HATCH, STRICT_GROUNDING]
+    for (const c of constants) {
+      expect(typeof c).toBe("string")
+      expect(c.length).toBeGreaterThan(10)
+    }
+  })
+
+  it("TECH_STACK_BASELINE_NOTICE contains tech stack reference", () => {
+    expect(TECH_STACK_BASELINE_NOTICE).toContain("TECH_STACK_BASELINE.md")
+    expect(TECH_STACK_BASELINE_NOTICE).toContain("ecosystem")
+  })
+
+  it("NO_FLUFF contains code block exemption", () => {
+    expect(NO_FLUFF).toContain("CRITICAL EXCEPTION")
+    expect(NO_FLUFF).toContain("Do not minify or truncate code")
+    expect(NO_FLUFF).toContain("NO-FLUFF INSTRUCTION")
+  })
+
+  it("LLD_ESCAPE_HATCH contains all 3 error codes", () => {
+    expect(LLD_ESCAPE_HATCH).toContain("DOC_CONTRADICTION")
+    expect(LLD_ESCAPE_HATCH).toContain("MISSING_API")
+    expect(LLD_ESCAPE_HATCH).toContain("RUNTIME_IMPOSSIBILITY")
+  })
+
+  it("LLD_ESCAPE_HATCH mentions rejection for invalid codes", () => {
+    expect(LLD_ESCAPE_HATCH).toContain("REJECT")
+  })
+
+  it("CIRCUIT_BREAKER enforces 3 failure limit", () => {
+    expect(CIRCUIT_BREAKER).toContain("3 CONSECUTIVE")
+    expect(CIRCUIT_BREAKER).toContain("IMMEDIATELY HALT")
+    expect(CIRCUIT_BREAKER).toContain("Do not attempt a 4th")
+  })
+
+  it("STRICT_GROUNDING enforces doc-first approach", () => {
+    expect(STRICT_GROUNDING).toContain("Do NOT use any parameter")
+    expect(STRICT_GROUNDING).toContain("Do not guess")
+    expect(STRICT_GROUNDING).toContain("verify the exact")
+    expect(STRICT_GROUNDING).toContain("signature from the DOCS")
+  })
+})
 
 describe("createAllAgents", () => {
-  const agents = createAllAgents(DEFAULT_CONFIG)
-
-  it("creates all 8 agents", () => {
+  it("creates all 8 agents with DEFAULT_CONFIG", () => {
+    const agents = createAllAgents(DEFAULT_CONFIG)
     const keys = Object.keys(agents)
     expect(keys.length).toBe(8)
   })
 
+  it("returns agents with exact expected keys", () => {
+    const agents = createAllAgents(DEFAULT_CONFIG)
+    const keys = Object.keys(agents)
+    expect(keys).toContain("Pipeline Orchestrator")
+    expect(keys).toContain("docs-researcher")
+    expect(keys).toContain("architect")
+    expect(keys).toContain("plan-checker")
+    expect(keys).toContain("coder")
+    expect(keys).toContain("coder-pro")
+    expect(keys).toContain("linter")
+    expect(keys).toContain("auditor")
+  })
+
   it("Pipeline Orchestrator is primary mode", () => {
-    const orchestrator = agents["Pipeline Orchestrator"]
-    expect(orchestrator).toBeDefined()
-    expect(orchestrator.mode).toBe("primary")
-    expect(orchestrator.hidden).toBeFalsy()
+    const agents = createAllAgents(DEFAULT_CONFIG)
+    expect(agents["Pipeline Orchestrator"].mode).toBe("primary")
+    expect(agents["Pipeline Orchestrator"].hidden).toBeFalsy()
   })
 
   it("all subagents are hidden", () => {
-    const subagentKeys = Object.keys(agents).filter(k => k !== "Pipeline Orchestrator")
-    for (const key of subagentKeys) {
-      expect(agents[key].hidden).toBe(true)
+    const agents = createAllAgents(DEFAULT_CONFIG)
+    for (const [key, agent] of Object.entries(agents)) {
+      if (key === "Pipeline Orchestrator") continue
+      expect(agent.hidden).toBe(true)
     }
   })
 
-  it("all agents have prompts", () => {
+  it("all agents have non-empty prompts", () => {
+    const agents = createAllAgents(DEFAULT_CONFIG)
     for (const [key, agent] of Object.entries(agents)) {
       expect(agent.prompt).toBeTruthy()
       expect(typeof agent.prompt).toBe("string")
@@ -33,16 +139,42 @@ describe("createAllAgents", () => {
     }
   })
 
-  it("all agents have temperature set", () => {
+  it("all agents have temperature and color set", () => {
+    const agents = createAllAgents(DEFAULT_CONFIG)
     for (const agent of Object.values(agents)) {
       expect(agent.temperature).toBeDefined()
+      expect(agent.color).toBeDefined()
     }
   })
 
-  it("all agents have color set", () => {
-    for (const [key, agent] of Object.entries(agents)) {
-      expect(agent.color).toBeDefined()
+  it("all agents have model set", () => {
+    const agents = createAllAgents(DEFAULT_CONFIG)
+    for (const agent of Object.values(agents)) {
+      expect(agent.model).toBeDefined()
+      expect(typeof agent.model).toBe("string")
     }
+  })
+
+  it("handles null config gracefully", () => {
+    expect(() => createAllAgents(null as any)).toThrow()
+  })
+
+  it("handles null config gracefully", () => {
+    expect(() => createAllAgents(null as any)).toThrow()
+  })
+
+  it("model assignments propagate correctly", () => {
+    const customConfig = {
+      ...DEFAULT_CONFIG,
+      models: {
+        ...DEFAULT_CONFIG.models,
+        orchestrator: "custom/model-orch",
+        coder: "custom/model-coder",
+      },
+    }
+    const agents = createAllAgents(customConfig)
+    expect(agents["Pipeline Orchestrator"].model).toBe("custom/model-orch")
+    expect(agents["coder"].model).toBe("custom/model-coder")
   })
 })
 
@@ -65,6 +197,7 @@ describe("agent prompts", () => {
 
   it("coder prompt contains strict grounding", () => {
     const prompt = agents["coder"].prompt as string
+    expect(prompt).not.toContain("COMPLEX")
     expect(prompt).toContain("STRICT GROUNDING")
     expect(prompt).toContain("LLD ESCAPE HATCH")
     expect(prompt).toContain("CIRCUIT BREAKER")
@@ -74,6 +207,12 @@ describe("agent prompts", () => {
   it("coder-pro prompt contains complexity marker", () => {
     const prompt = agents["coder-pro"].prompt as string
     expect(prompt).toContain("COMPLEX")
+  })
+
+  it("coder and coder-pro are distinct", () => {
+    const coder = agents["coder"].prompt as string
+    const coderPro = agents["coder-pro"].prompt as string
+    expect(coder).not.toBe(coderPro)
   })
 
   it("architect prompt contains XML LLD format", () => {
@@ -100,45 +239,22 @@ describe("agent prompts", () => {
   it("all subagents contain NO_FLUFF", () => {
     for (const [key, agent] of Object.entries(agents)) {
       if (key === "Pipeline Orchestrator") continue
-      const prompt = agent.prompt as string
-      expect(prompt).toContain("Minimize output tokens")
+      expect((agent.prompt as string)).toContain("Minimize output tokens")
     }
   })
 
   it("orchestrator does NOT contain NO_FLUFF", () => {
-    const prompt = agents["Pipeline Orchestrator"].prompt as string
-    expect(prompt).not.toContain("Minimize output tokens")
+    expect((agents["Pipeline Orchestrator"].prompt as string)).not.toContain("Minimize output tokens")
   })
 
   it("coder and architect contain TECH_STACK_BASELINE", () => {
-    const coderPrompt = agents["coder"].prompt as string
-    const architectPrompt = agents["architect"].prompt as string
-    expect(coderPrompt).toContain("TECH_STACK_BASELINE.md")
-    expect(architectPrompt).toContain("TECH_STACK_BASELINE.md")
-  })
-})
-
-describe("prompt-utils", () => {
-  it("NO_FLUFF contains code block exemption", () => {
-    expect(NO_FLUFF).toContain("CRITICAL EXCEPTION")
-    expect(NO_FLUFF).toContain("Do not minify or truncate code")
+    expect((agents["coder"].prompt as string)).toContain("TECH_STACK_BASELINE.md")
+    expect((agents["architect"].prompt as string)).toContain("TECH_STACK_BASELINE.md")
   })
 
-  it("LLD_ESCAPE_HATCH contains all 3 error codes", () => {
-    expect(LLD_ESCAPE_HATCH).toContain("DOC_CONTRADICTION")
-    expect(LLD_ESCAPE_HATCH).toContain("MISSING_API")
-    expect(LLD_ESCAPE_HATCH).toContain("RUNTIME_IMPOSSIBILITY")
-  })
-
-  it("CIRCUIT_BREAKER enforces 3 failure limit", () => {
-    expect(CIRCUIT_BREAKER).toContain("3 CONSECUTIVE")
-    expect(CIRCUIT_BREAKER).toContain("IMMEDIATELY HALT")
-    expect(CIRCUIT_BREAKER).toContain("Do not attempt a 4th")
-  })
-
-  it("STRICT_GROUNDING enforces doc-first approach", () => {
-    expect(STRICT_GROUNDING).toContain("Do NOT use any parameter")
-    expect(STRICT_GROUNDING).toContain("Do not guess")
+  it("docs-researcher prompt cites source requirement", () => {
+    const prompt = agents["docs-researcher"].prompt as string
+    expect(prompt).toContain("Cite sources")
   })
 })
 
@@ -156,16 +272,40 @@ describe("permissions", () => {
     expect(perm?.["docs-mcp-server_*"]).toBe("allow")
   })
 
+  it("docs-researcher has webfetch and websearch allowed", () => {
+    const perm = agents["docs-researcher"].permission as any
+    expect(perm?.webfetch).toBe("allow")
+    expect(perm?.websearch).toBe("allow")
+  })
+
   it("coder has edit allow and bash allow", () => {
     const perm = agents["coder"].permission as any
     expect(perm?.edit).toBe("allow")
     expect(perm?.bash).toBe("allow")
   })
 
+  it("coder has question deny", () => {
+    const perm = agents["coder"].permission as any
+    expect(perm?.question).toBe("deny")
+  })
+
+  it("coder-pro has same permissions as coder", () => {
+    const coderPerm = agents["coder"].permission
+    const coderProPerm = agents["coder-pro"].permission
+    expect(coderProPerm).toEqual(coderPerm)
+  })
+
   it("linter has edit deny and bash deny", () => {
     const perm = agents["linter"].permission as any
     expect(perm?.edit).toBe("deny")
     expect(perm?.bash).toBe("deny")
+  })
+
+  it("linter has read/glob/grep allow", () => {
+    const perm = agents["linter"].permission as any
+    expect(perm?.read).toBe("allow")
+    expect(perm?.glob).toBe("allow")
+    expect(perm?.grep).toBe("allow")
   })
 
   it("auditor has edit deny and bash deny", () => {
@@ -177,7 +317,6 @@ describe("permissions", () => {
   it("orchestrator task restricts to pipeline subagents only", () => {
     const perm = agents["Pipeline Orchestrator"].permission as any
     const task = perm?.task
-    expect(task).toBeDefined()
     expect(task["*"]).toBe("deny")
     expect(task["coder"]).toBe("allow")
     expect(task["architect"]).toBe("allow")
@@ -188,6 +327,13 @@ describe("permissions", () => {
       if (key === "Pipeline Orchestrator") continue
       const perm = agent.permission as any
       expect(perm?.question).toBe("deny")
+    }
+  })
+
+  it("all agents have a permission object", () => {
+    for (const [key, agent] of Object.entries(agents)) {
+      expect(agent.permission).toBeDefined()
+      expect(typeof agent.permission).toBe("object")
     }
   })
 })
