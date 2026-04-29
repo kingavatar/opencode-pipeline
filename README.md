@@ -2,7 +2,7 @@
 
 A cost-efficient, doc-grounded, multi-agent development pipeline plugin for [OpenCode](https://opencode.ai).
 
-8 specialized agents work through an 8-phase workflow: **Research → Requirements → Architecture → Plan Check → Code → Dual Review → Filter → Commit**. Only the orchestrator talks to you. Everything else is automated.
+9 specialized agents — 7 pipeline workers through an 8-phase workflow (**Research → Requirements → Architecture → Plan Check → Code → Dual Review → Filter → Commit**), plus a standalone **Advisor** for on-demand project guidance. Only the orchestrator and Advisor talk to you. Everything else is automated.
 
 Built on DeepSeek V4 API (Pro + Flash). Flash is 12x cheaper on output — the plugin assigns the cheapest model that can do each job.
 
@@ -80,6 +80,8 @@ Then add to `opencode.json`:
 
 The orchestrator interviews you, fetches research, creates architecture plans, writes code, reviews it, and commits — all with your approval at each major decision point.
 
+For project advice outside the pipeline (architecture guidance, tech stack questions, library research, design discussions), switch to the **Advisor** agent at any time. It asks clarifying questions, researches via web and indexed docs, and proactively offers to scrape new library documentation when needed.
+
 ### Commands
 
 | Command | Action |
@@ -107,6 +109,7 @@ PHASE 7: COMMIT                git add/commit/push
 | Agent | Model | Mode | Cost/Cycle | Role |
 |---|---|---|---|---|
 | **Pipeline Orchestrator** | Pro | Primary | $0.03 | User interface, workflow driver, commit handler |
+| **Advisor** | Pro | Primary | — | On-demand project guidance, tech stack research, architecture advice |
 | **docs-researcher** | Flash | Hidden | $0.002 | JIT doc scraping, web search, codebase exploration |
 | **architect** | Pro | Hidden | $0.05 | PRD → HLD → XML LLD |
 | **plan-checker** | Flash | Hidden | $0.002 | Pre-execution LLD vs PRD verification |
@@ -117,12 +120,12 @@ PHASE 7: COMMIT                git add/commit/push
 
 **Total: ~$0.13 per cycle (closed coder), ~$0.18 (pro coder).**
 
-Hidden agents are invoked automatically by the orchestrator via the Task tool. They never appear in the @mention menu and never talk to you directly.
+Hidden agents are invoked automatically by the orchestrator via the Task tool. They never appear in the @mention menu and never talk to you directly. The Advisor is visible in the agent picker and can be used at any time independently of the pipeline.
 
 ### Model Assignment Rationale
 
 - **Flash (13B active)**: docs-researcher, plan-checker, linter — read/fetch or checklist pattern-matching. Flash is 12x cheaper on output.
-- **Pro (49B active)**: orchestrator, architect, auditor — user-facing quality, deep reasoning for planning, subtle bug detection.
+- **Pro (49B active)**: orchestrator, Advisor, architect, auditor — user-facing quality, deep reasoning for planning, nuanced advisory, subtle bug detection.
 - **coder defaults to Flash**: Spec-driven coding from LLD + docs is a translation task. Flash's 13B active params are sufficient. `coder-pro` is the fallback for complex algorithms.
 
 ## Architecture Decisions
@@ -164,6 +167,9 @@ All subagents strip filler words, pleasantries, and hedging. Saves 20-30% output
 ### Max 2 Refine Cycles
 Without a guard, coder → auditor → coder could loop indefinitely. The orchestrator enforces a hard limit.
 
+### Docs-MCP-Server Integration (Advisor)
+The Advisor proactively checks indexed documentation via `docs-mcp-server_search_docs` before falling back to web search. When a library or framework isn't yet indexed, the Advisor explicitly asks: *"I don't have [library] docs indexed. Would you like me to scrape them via docs-mcp-server_scrape_docs? This will give me direct access to the official documentation for better answers."* The user approves, and the Advisor scrapes on their behalf — providing grounded, up-to-date answers from official sources.
+
 ## Configuration
 
 Create `~/.config/opencode/pipeline-config.jsonc` (global) or `.opencode/pipeline-config.jsonc` (per-project):
@@ -176,6 +182,7 @@ Create `~/.config/opencode/pipeline-config.jsonc` (global) or `.opencode/pipelin
   },
   "models": {
     "orchestrator": "deepseek-oai/deepseek-v4-pro",
+    "advisor": "deepseek-oai/deepseek-v4-pro",
     "docsResearcher": "deepseek-oai/deepseek-v4-flash",
     "architect": "deepseek-oai/deepseek-v4-pro",
     "planChecker": "deepseek-oai/deepseek-v4-flash",
@@ -312,6 +319,7 @@ src/
 ├── index.ts                     Plugin entry
 ├── agents/
 │   ├── orchestrator.ts          Primary orchestrator (Pro)
+│   ├── advisor.ts               Standalone advisor (Pro)
 │   ├── docs-researcher.ts       JIT doc fetcher (Flash)
 │   ├── architect.ts             HLD/LLD planner (Pro)
 │   ├── plan-checker.ts          Pre-exec LLD verifier (Flash)
