@@ -8,12 +8,12 @@ import {
   getStatePreview,
 } from "../storage"
 
-function validateKey(key: unknown): string | (typeof STATE_KEYS)[number] {
+function validateKey(key: unknown): { ok: true; key: (typeof STATE_KEYS)[number] } | { ok: false; error: string } {
   const k = key as string
   if (!(STATE_KEYS as readonly string[]).includes(k)) {
-    return `Invalid key '${k}'. Valid keys: ${STATE_KEYS.join(", ")}`
+    return { ok: false, error: `Invalid key '${k}'. Valid keys: ${STATE_KEYS.join(", ")}` }
   }
-  return k as (typeof STATE_KEYS)[number]
+  return { ok: true, key: k as (typeof STATE_KEYS)[number] }
 }
 
 function getCwd(context: { worktree?: string; directory?: string }): string | null {
@@ -35,11 +35,11 @@ const _pipeline_store = tool({
     if (!cwd) return "Error: no workspace context available"
     const workspaceId = getWorkspaceId(cwd)
     await registerWorkspace(cwd)
-    const validKey = validateKey(args.key)
-    if (typeof validKey === "string") return validKey
+    const validated = validateKey(args.key)
+    if (!validated.ok) return validated.error
     const mode = (args.mode ?? "write") as "write" | "append"
-    await storeState(workspaceId, validKey, String(args.content), mode)
-    return `Stored ${validKey} for workspace ${workspaceId}`
+    await storeState(workspaceId, validated.key, String(args.content), mode)
+    return `Stored ${validated.key} for workspace ${workspaceId}`
   },
 })
 
@@ -54,11 +54,11 @@ const _pipeline_load = tool({
     if (!cwd) return "Error: no workspace context available"
     const workspaceId = getWorkspaceId(cwd)
     await registerWorkspace(cwd)
-    const validKey = validateKey(args.key)
-    if (typeof validKey === "string") return validKey
-    const content = await loadState(workspaceId, validKey, Number(args.lines ?? 0))
+    const validated = validateKey(args.key)
+    if (!validated.ok) return validated.error
+    const content = await loadState(workspaceId, validated.key, Number(args.lines ?? 0))
     if (content === null) {
-      return `No saved state for ${validKey} in workspace ${workspaceId}`
+      return `No saved state for ${validated.key} in workspace ${workspaceId}`
     }
     return content
   },

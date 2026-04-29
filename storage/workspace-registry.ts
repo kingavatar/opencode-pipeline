@@ -94,7 +94,7 @@ export async function storeState(
   if (mode === "append") {
     await appendFile(filePath, content + "\n")
   } else {
-    await writeFile(filePath, content)
+    await writeFile(filePath, content + "\n")
   }
 }
 
