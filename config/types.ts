@@ -4,6 +4,7 @@ export interface PipelineStorageConfig {
 }
 
 export interface PipelineModelConfig {
+  advisor: string
   orchestrator: string
   docsResearcher: string
   architect: string
@@ -45,6 +46,7 @@ export const DEFAULT_CONFIG: PipelineConfig = {
     maxHistoryEntries: 50,
   },
   models: {
+    advisor: "deepseek-oai/deepseek-v4-pro",
     orchestrator: "deepseek-oai/deepseek-v4-pro",
     docsResearcher: "deepseek-oai/deepseek-v4-flash",
     architect: "deepseek-oai/deepseek-v4-pro",

@@ -97,10 +97,10 @@ describe("prompt-utils constants", () => {
 })
 
 describe("createAllAgents", () => {
-  it("creates all 8 agents with DEFAULT_CONFIG", () => {
+  it("creates all 9 agents with DEFAULT_CONFIG", () => {
     const agents = createAllAgents(DEFAULT_CONFIG)
     const keys = Object.keys(agents)
-    expect(keys.length).toBe(8)
+    expect(keys.length).toBe(9)
   })
 
   it("returns agents with exact expected keys", () => {
@@ -114,6 +114,7 @@ describe("createAllAgents", () => {
     expect(keys).toContain("coder-pro")
     expect(keys).toContain("linter")
     expect(keys).toContain("auditor")
+    expect(keys).toContain("Advisor")
   })
 
   it("Pipeline Orchestrator is primary mode", () => {
@@ -125,7 +126,7 @@ describe("createAllAgents", () => {
   it("all subagents are hidden", () => {
     const agents = createAllAgents(DEFAULT_CONFIG)
     for (const [key, agent] of Object.entries(agents)) {
-      if (key === "Pipeline Orchestrator") continue
+      if (key === "Pipeline Orchestrator" || key === "Advisor") continue
       expect(agent.hidden).toBe(true)
     }
   })
@@ -153,10 +154,6 @@ describe("createAllAgents", () => {
       expect(agent.model).toBeDefined()
       expect(typeof agent.model).toBe("string")
     }
-  })
-
-  it("handles null config gracefully", () => {
-    expect(() => createAllAgents(null as any)).toThrow()
   })
 
   it("handles null config gracefully", () => {
@@ -238,13 +235,17 @@ describe("agent prompts", () => {
 
   it("all subagents contain NO_FLUFF", () => {
     for (const [key, agent] of Object.entries(agents)) {
-      if (key === "Pipeline Orchestrator") continue
+      if (key === "Pipeline Orchestrator" || key === "Advisor") continue
       expect((agent.prompt as string)).toContain("Minimize output tokens")
     }
   })
 
   it("orchestrator does NOT contain NO_FLUFF", () => {
     expect((agents["Pipeline Orchestrator"].prompt as string)).not.toContain("Minimize output tokens")
+  })
+
+  it("Advisor does NOT contain NO_FLUFF", () => {
+    expect((agents["Advisor"].prompt as string)).not.toContain("Minimize output tokens")
   })
 
   it("coder and architect contain TECH_STACK_BASELINE", () => {
@@ -324,7 +325,7 @@ describe("permissions", () => {
 
   it("all subagents have question deny", () => {
     for (const [key, agent] of Object.entries(agents)) {
-      if (key === "Pipeline Orchestrator") continue
+      if (key === "Pipeline Orchestrator" || key === "Advisor") continue
       const perm = agent.permission as any
       expect(perm?.question).toBe("deny")
     }
@@ -335,5 +336,108 @@ describe("permissions", () => {
       expect(agent.permission).toBeDefined()
       expect(typeof agent.permission).toBe("object")
     }
+  })
+})
+
+describe("Advisor agent", () => {
+  const agents = createAllAgents(DEFAULT_CONFIG)
+  const advisor = agents["Advisor"]
+
+  it("is registered as primary agent", () => {
+    expect(advisor.mode).toBe("primary")
+  })
+
+  it("is not hidden", () => {
+    expect(advisor.hidden).toBeFalsy()
+  })
+
+  it("has correct color and temperature", () => {
+    expect(advisor.color).toBe("#7C3AED")
+    expect(advisor.temperature).toBe(0.1)
+  })
+
+  it("uses the configured advisor model", () => {
+    expect(advisor.model).toBe(DEFAULT_CONFIG.models.advisor)
+  })
+
+  it("model is configurable via config", () => {
+    const customConfig = {
+      ...DEFAULT_CONFIG,
+      models: { ...DEFAULT_CONFIG.models, advisor: "custom/advisor-model" },
+    }
+    const customAgents = createAllAgents(customConfig)
+    expect(customAgents["Advisor"].model).toBe("custom/advisor-model")
+  })
+
+  it("has question allow", () => {
+    const perm = advisor.permission as any
+    expect(perm?.question).toBe("allow")
+  })
+
+  it("has edit deny and bash deny", () => {
+    const perm = advisor.permission as any
+    expect(perm?.edit).toBe("deny")
+    expect(perm?.bash).toBe("deny")
+  })
+
+  it("has webfetch and websearch allow", () => {
+    const perm = advisor.permission as any
+    expect(perm?.webfetch).toBe("allow")
+    expect(perm?.websearch).toBe("allow")
+  })
+
+  it("has docs-mcp-server_* allow", () => {
+    const perm = advisor.permission as any
+    expect(perm?.["docs-mcp-server_*"]).toBe("allow")
+  })
+
+  it("has glob and grep allow", () => {
+    const perm = advisor.permission as any
+    expect(perm?.glob).toBe("allow")
+    expect(perm?.grep).toBe("allow")
+  })
+
+  it("has read allow", () => {
+    const perm = advisor.permission as any
+    expect(perm?.read).toBe("allow")
+  })
+
+  it("task restricts to docs-researcher and explore only", () => {
+    const perm = advisor.permission as any
+    const task = perm?.task
+    expect(task["*"]).toBe("deny")
+    expect(task["docs-researcher"]).toBe("allow")
+    expect(task["explore"]).toBe("allow")
+    expect(task["coder"]).toBeUndefined()
+    expect(task["architect"]).toBeUndefined()
+    expect(task["plan-checker"]).toBeUndefined()
+  })
+
+  it("prompt contains Advisor role description", () => {
+    expect(advisor.prompt).toContain("Advisor")
+  })
+
+  it("prompt contains clarifying questions requirement", () => {
+    expect(advisor.prompt).toContain("ASK CLARIFYING QUESTIONS")
+  })
+
+  it("prompt contains citation requirement", () => {
+    expect(advisor.prompt).toContain("CITE SOURCES")
+  })
+
+  it("prompt contains reasoning/tradeoffs/alternatives requirement", () => {
+    expect(advisor.prompt).toContain("reasoning, tradeoffs, alternatives")
+  })
+
+  it("prompt contains TECH_STACK_BASELINE.md reference", () => {
+    expect(advisor.prompt).toContain("TECH_STACK_BASELINE.md")
+  })
+
+  it("prompt does NOT contain NO_FLUFF", () => {
+    expect(advisor.prompt).not.toContain("Minimize output tokens")
+  })
+
+  it("prompt contains docs-researcher delegation instruction", () => {
+    expect(advisor.prompt).toContain("docs-researcher")
   })
 })

@@ -2,6 +2,7 @@ import type { AgentConfig } from "@opencode-ai/sdk"
 import type { PipelineConfig } from "../config/types"
 import { createOrchestrator } from "./orchestrator"
 import { createDocsResearcher } from "./docs-researcher"
+import { createAdvisor } from "./advisor"
 import { createArchitect } from "./architect"
 import { createPlanChecker } from "./plan-checker"
 import { createCoder, createCoderPro } from "./coder"
@@ -11,6 +12,7 @@ export function createAllAgents(config: PipelineConfig): Record<string, AgentCon
   const m = config.models
 
   return {
+    "Advisor": createAdvisor(m.advisor),
     "Pipeline Orchestrator": createOrchestrator(m.orchestrator),
     "docs-researcher": createDocsResearcher(m.docsResearcher),
     "architect": createArchitect(m.architect),

@@ -208,8 +208,9 @@ describe("DEFAULT_CONFIG", () => {
   it("has debug field defaulting to false", () => {
     expect(DEFAULT_CONFIG.debug).toBe(false)
   })
-  it("has all 8 model entries", () => {
+  it("has all 9 model entries", () => {
     const m = DEFAULT_CONFIG.models
+    expect(m.advisor).toContain("deepseek")
     expect(m.orchestrator).toContain("deepseek")
     expect(m.docsResearcher).toContain("flash")
     expect(m.architect).toContain("pro")
@@ -241,8 +242,8 @@ describe("DEFAULT_CONFIG", () => {
     expect(DEFAULT_CONFIG.storage.root).toBe("")
   })
 
-  it("models object has exactly 8 keys", () => {
-    expect(Object.keys(DEFAULT_CONFIG.models).length).toBe(8)
+  it("models object has exactly 9 keys", () => {
+    expect(Object.keys(DEFAULT_CONFIG.models).length).toBe(9)
   })
 
   it("workflow object has exactly 6 keys", () => {
