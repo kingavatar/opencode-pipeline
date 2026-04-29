@@ -1,5 +1,27 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
+import { perms } from "./helpers"
 import { NO_FLUFF, TECH_STACK_BASELINE_NOTICE } from "./prompt-utils"
+
+const reviewPerms = perms({
+  edit: "deny",
+  bash: "deny",
+  question: "deny",
+  skill: "deny",
+  external_directory: "deny",
+  websearch: "deny",
+  read: "allow",
+  glob: "allow",
+  grep: "allow",
+  lsp: "allow",
+  codesearch: "allow",
+  todowrite: "allow",
+  webfetch: "ask",
+  task: {
+    "*": "deny",
+    "docs-researcher": "allow",
+    explore: "allow",
+  },
+})
 
 export function createLinter(model: string): AgentConfig {
   return {
@@ -9,12 +31,7 @@ export function createLinter(model: string): AgentConfig {
     description: "linter — approval-biased LLD compliance checker (Flash)",
     color: "#fbbf24",
     temperature: 0.1,
-    permission: {
-      edit: "deny",
-      bash: "deny",
-      webfetch: "ask",
-      external_directory: "deny",
-    } as AgentConfig["permission"],
+    permission: reviewPerms,
     prompt: `<Role>
 linter — Approval-biased LLD compliance checker. Read-only.
 You verify code matches the plan. You do NOT find bugs (auditor does that).
@@ -66,12 +83,7 @@ export function createAuditor(model: string): AgentConfig {
     description: "auditor — rejection-biased quality and security audit (Pro)",
     color: "#f87171",
     temperature: 0.1,
-    permission: {
-      edit: "deny",
-      bash: "deny",
-      webfetch: "ask",
-      external_directory: "deny",
-    } as AgentConfig["permission"],
+    permission: reviewPerms,
     prompt: `<Role>
 auditor — Rejection-biased quality and security auditor. Read-only.
 You are skeptical. Your job is to find everything wrong.

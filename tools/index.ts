@@ -3,6 +3,7 @@ import {
   getWorkspaceId,
   storeState,
   loadState,
+  registerWorkspace,
   STATE_KEYS,
   getStatePreview,
 } from "../storage"
@@ -16,10 +17,17 @@ const _pipeline_store = tool({
     mode: tool.schema.string().default("write").describe("Write mode: write or append"),
   },
   async execute(args, context) {
-    const workspaceId = getWorkspaceId(context.worktree || context.directory)
-    const key = args.key as (typeof STATE_KEYS)[number]
+    const cwd = context.worktree || context.directory
+    if (!cwd) return "Error: no workspace context available"
+    const workspaceId = getWorkspaceId(cwd)
+    await registerWorkspace(cwd)
+    const key = args.key as string
+    if (!(STATE_KEYS as readonly string[]).includes(key)) {
+      return `Invalid key '${key}'. Valid keys: ${STATE_KEYS.join(", ")}`
+    }
+    const validKey = key as (typeof STATE_KEYS)[number]
     const mode = (args.mode ?? "write") as "write" | "append"
-    await storeState(workspaceId, key, String(args.content), mode)
+    await storeState(workspaceId, validKey, String(args.content), mode)
     return `Stored ${key} for workspace ${workspaceId}`
   },
 })
@@ -31,9 +39,16 @@ const _pipeline_load = tool({
     lines: tool.schema.number().optional().describe("Max lines to return"),
   },
   async execute(args, context) {
-    const workspaceId = getWorkspaceId(context.worktree || context.directory)
-    const key = args.key as (typeof STATE_KEYS)[number]
-    const content = await loadState(workspaceId, key, Number(args.lines ?? 0))
+    const cwd = context.worktree || context.directory
+    if (!cwd) return "Error: no workspace context available"
+    const workspaceId = getWorkspaceId(cwd)
+    await registerWorkspace(cwd)
+    const key = args.key as string
+    if (!(STATE_KEYS as readonly string[]).includes(key)) {
+      return `Invalid key '${key}'. Valid keys: ${STATE_KEYS.join(", ")}`
+    }
+    const validKey = key as (typeof STATE_KEYS)[number]
+    const content = await loadState(workspaceId, validKey, Number(args.lines ?? 0))
     if (content === null) {
       return `No saved state for ${key} in workspace ${workspaceId}`
     }
@@ -45,7 +60,10 @@ const _pipeline_status = tool({
   description: "Get current pipeline status for this workspace",
   args: {},
   async execute(_args, context) {
-    const workspaceId = getWorkspaceId(context.worktree || context.directory)
+    const cwd = context.worktree || context.directory
+    if (!cwd) return "Error: no workspace context available"
+    const workspaceId = getWorkspaceId(cwd)
+    await registerWorkspace(cwd)
     const preview = await getStatePreview(workspaceId)
     const lines: string[] = []
     lines.push(`Workspace: ${workspaceId}`)

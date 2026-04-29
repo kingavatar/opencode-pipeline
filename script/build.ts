@@ -8,7 +8,6 @@ const result = await build({
   external: [
     "@opencode-ai/plugin",
     "@opencode-ai/sdk",
-    "zod",
   ],
   minify: false,
   sourcemap: "linked",

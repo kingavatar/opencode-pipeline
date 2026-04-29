@@ -2,9 +2,10 @@ import { join } from "path"
 import { mkdir, readFile, writeFile, appendFile, rename } from "fs/promises"
 import { existsSync } from "fs"
 import { createHash } from "crypto"
+import { homedir } from "os"
 
 export const STORAGE_ROOT = join(
-  process.env.HOME || process.env.USERPROFILE || "~",
+  process.env.HOME || process.env.USERPROFILE || homedir(),
   ".local",
   "share",
   "opencode",
@@ -45,8 +46,10 @@ function workspaceDir(workspaceId: string): string {
 async function loadWorkspaces(): Promise<Workspaces> {
   try {
     const raw = await readFile(WORKSPACES_FILE, "utf-8")
-    return JSON.parse(raw)
-  } catch {
+    return JSON.parse(raw) as Workspaces
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return {}
+    console.error("[pipeline] Failed to parse workspaces.json — data may be corrupted:", err)
     return {}
   }
 }

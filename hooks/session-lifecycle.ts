@@ -19,6 +19,8 @@ interface HooksOptions {
 }
 
 export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
+  const sessionBranches = new Map<string, string>()
+
   return {
     onSessionCreated: async (sessionID: string) => {
       if (!opts.autoBranch) return
@@ -28,6 +30,8 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
       const shortId = sessionID.slice(0, 8)
       const branchName = `${opts.branchPrefix}/${timestamp}-${shortId}`
 
+      let hadUncommitted = false
+
       try {
         const existingBranches =
           await $`git -C ${cwd} branch --list ${branchName}`.quiet().text()
@@ -35,7 +39,7 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
         if (existingBranches.trim()) {
           await $`git -C ${cwd} checkout ${branchName}`.quiet()
         } else {
-          const hadUncommitted =
+          hadUncommitted =
             (await $`git -C ${cwd} status --porcelain`.quiet().text()).trim().length > 0
 
           if (hadUncommitted) {
@@ -43,15 +47,18 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
           }
 
           await $`git -C ${cwd} checkout -b ${branchName}`.quiet()
+        }
 
-          if (hadUncommitted) {
-            const popResult = await $`git -C ${cwd} stash pop`.nothrow().quiet()
-            if (popResult.exitCode !== 0) {
-              console.error(
-                `[pipeline] Stash pop conflict on branch ${branchName}. ` +
-                `Changes remain in stash. Run 'git stash list' and resolve manually.`,
-              )
-            }
+        sessionBranches.set(sessionID, branchName)
+
+        if (hadUncommitted) {
+          const popResult = await $`git -C ${cwd} stash pop`.nothrow().quiet()
+          if (popResult.exitCode !== 0) {
+            console.error(
+              `[pipeline] CRITICAL: Stash pop produced conflicts on branch ${branchName}. ` +
+              `Your changes are in a conflicted state. The stash is preserved. ` +
+              `Run 'git stash list' and 'git diff' to inspect.`,
+            )
           }
         }
 
@@ -64,13 +71,17 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
       }
     },
 
-    onSessionIdle: async (_sessionID: string) => {
+    onSessionIdle: async (sessionID: string) => {
       if (!opts.autoBranch || !opts.autoCleanup) return
 
       const cwd = ctx.worktree || ctx.directory
+      const branchName = sessionBranches.get(sessionID)
+      if (!branchName) return
+
       try {
         await $`git -C ${cwd} checkout ${opts.baseBranch} 2>/dev/null`.quiet()
-        const mergeResult = await $`git -C ${cwd} merge --no-ff --no-edit ${opts.branchPrefix}/* 2>/dev/null`.nothrow().quiet()
+        const mergeResult = await $`git -C ${cwd} merge --no-ff --no-edit ${branchName} 2>/dev/null`.nothrow().quiet()
+        sessionBranches.delete(sessionID)
         if (mergeResult.exitCode === 0) {
           const workspaceId = getWorkspaceId(cwd)
           const state = await loadState(workspaceId, "STATE.md")

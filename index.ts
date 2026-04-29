@@ -5,16 +5,20 @@ import { pipeline_store, pipeline_load, pipeline_status } from "./tools"
 import { PIPELINE_COMMANDS } from "./commands"
 import { createSessionHooks, createCompactionHook } from "./hooks"
 import { loadConfig } from "./config/loader"
+import { DEFAULT_CONFIG } from "./config/types"
 
 const PipelinePlugin: Plugin = async (ctx) => {
   const cwd = ctx.worktree || ctx.directory
+  if (!cwd) {
+    console.error("[pipeline] No worktree or directory in context, plugin disabled")
+    return {}
+  }
 
   let config
   try {
     config = await loadConfig(cwd)
   } catch (err) {
     console.error("[pipeline] Failed to load config, using defaults:", err)
-    const { DEFAULT_CONFIG } = await import("./config/types")
     config = DEFAULT_CONFIG
   }
 

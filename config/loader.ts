@@ -1,30 +1,45 @@
 import { readFile } from "fs/promises"
 import { join } from "path"
+import { homedir } from "os"
 import type { PipelineConfig } from "./types"
 import { DEFAULT_CONFIG } from "./types"
 
+function stripJsonComments(raw: string): string {
+  return raw
+    .replace(/\/\/.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/,\s*([}\]])/g, "$1")
+}
+
 export async function loadConfig(directory: string): Promise<PipelineConfig> {
-  let config: PipelineConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG))
+  let config: PipelineConfig = {
+    storage: { ...DEFAULT_CONFIG.storage },
+    models: { ...DEFAULT_CONFIG.models },
+    workflow: { ...DEFAULT_CONFIG.workflow },
+    git: { ...DEFAULT_CONFIG.git },
+  }
 
   const paths = [
     join(directory, ".opencode", "pipeline-config.jsonc"),
     join(directory, ".opencode", "pipeline-config.json"),
   ]
 
-  const home = process.env.HOME || process.env.USERPROFILE || "~"
+  const home = process.env.HOME || process.env.USERPROFILE || homedir()
   const globalPaths = [
     join(home, ".config", "opencode", "pipeline-config.jsonc"),
     join(home, ".config", "opencode", "pipeline-config.json"),
   ]
 
-  // Global first, then per-project overrides it
   for (const p of [...globalPaths, ...paths]) {
     try {
       const raw = await readFile(p, "utf-8")
-      const parsed = JSON.parse(raw) as Partial<PipelineConfig>
+      const cleaned = stripJsonComments(raw)
+      const parsed = JSON.parse(cleaned) as Partial<PipelineConfig>
       config = mergeConfig(config, parsed)
-    } catch {
-      // File doesn't exist or invalid — skip
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") {
+        console.warn(`[pipeline] Could not load config from ${p}:`, (err as Error).message)
+      }
     }
   }
 
