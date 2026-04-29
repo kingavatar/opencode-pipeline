@@ -34,7 +34,7 @@ Then add to `~/.config/opencode/opencode.json`:
 }
 ```
 
-For local filesystem plugins, OpenCode uses `file:///` URIs in the `plugin` array. The flat file copy to `~/.config/opencode/plugins/pipeline.js` serves as a secondary load path for auto-discovery.
+OpenCode uses `file:///` URIs in the `plugin` array for local filesystem plugins. Single load path — no flat file auto-discovery (avoids double-load crashes). Commands live as markdown files in `~/.config/opencode/commands/` (GSD pattern), auto-discovered by OpenCode.
 
 Restart OpenCode. The `Pipeline Orchestrator` agent appears in your Tab cycle.
 
@@ -276,10 +276,9 @@ export default async (ctx) => {
   const agents = createAllAgents(config)
 
   return {
-    // Inject agents + commands at startup
+    // Inject agents at startup (Weave pattern: tools boolean map)
     config: async (cfg) => {
       cfg.agent = { ...cfg.agent, ...agents }
-      cfg.command = { ...cfg.command, ...PIPELINE_COMMANDS }
     },
 
     // Custom tools for state persistence
@@ -321,7 +320,11 @@ src/
 │   ├── prompt-utils.ts          Shared prompt fragments
 │   └── helpers.ts               Type utilities
 ├── tools/index.ts               pipeline_store/load/status
-├── commands/index.ts            4 slash commands
+├── commands/                     4 markdown command files (GSD pattern)
+│   ├── pipeline-init.md          Initialize pipeline in workspace
+│   ├── pipeline-resume.md        Resume from saved state
+│   ├── pipeline-status.md        Show current status
+│   └── pipeline-help.md          Workflow overview
 ├── hooks/
 │   ├── session-lifecycle.ts     Git branch isolation
 │   └── compaction.ts            Pipeline-aware compaction
