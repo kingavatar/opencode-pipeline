@@ -14,7 +14,7 @@ Built on DeepSeek V4 API (Pro + Flash). Flash is 12x cheaper on output — the p
 cd ~/dev/personal/opencode-pipeline && bun run deploy
 ```
 
-This builds the plugin, copies it to `~/.config/opencode/plugins/pipeline.js`, and adds the `file:///` entry to your `opencode.json` plugin array.
+This builds the plugin, copies command markdown files to `~/.config/opencode/commands/`, and ensures the `file:///` entry is in your `opencode.json` plugin array. Commands use OpenCode's file auto-discovery (GSD pattern) — no config hook injection, no web server crashes.
 
 ### Manual
 

@@ -1,19 +1,26 @@
 import { join } from "path"
-import { readFile, writeFile, rm } from "fs/promises"
+import { readFile, writeFile, rm, mkdir, cp } from "fs/promises"
 import { $ } from "bun"
 
 const home = process.env.HOME || process.env.USERPROFILE || "~"
 const configFile = join(home, ".config", "opencode", "opencode.json")
+const commandsSrc = join(import.meta.dir, "..", "commands")
+const commandsDest = join(home, ".config", "opencode", "commands")
 
 // Build
 await $`bun run script/build.ts`
 
-// Remove flat plugin file (auto-discovery causes double-load)
+// Remove flat plugin file (auto-discovery causes double-load → crashes)
 const flatFile = join(home, ".config", "opencode", "plugins", "pipeline.js")
-try {
-  await rm(flatFile, { force: true })
-  console.log("Removed flat plugin file (file:/// is the single load path)")
-} catch {}
+try { await rm(flatFile, { force: true }) } catch {}
+
+// Deploy command markdown files (GSD pattern: file auto-discovery, no config hook)
+await mkdir(commandsDest, { recursive: true })
+const srcFiles = ["pipeline-init.md", "pipeline-resume.md", "pipeline-status.md", "pipeline-help.md"]
+for (const f of srcFiles) {
+  await cp(join(commandsSrc, f), join(commandsDest, f))
+}
+console.log(`Deployed ${srcFiles.length} commands to ${commandsDest}`)
 
 // Ensure file:/// entry exists in opencode.json plugin array
 try {
@@ -27,12 +34,9 @@ try {
     config.plugin = plugins
     await writeFile(configFile, JSON.stringify(config, null, 2) + "\n")
     console.log(`Added plugin entry to opencode.json`)
-  } else {
-    console.log(`Plugin already in opencode.json plugin array`)
   }
 } catch (err) {
   console.error("Could not update opencode.json:", err)
-  console.log(`Add manually: "${pluginUri}"`)
 }
 
-console.log("Deployed via file:/// only (no flat auto-discovery)")
+console.log("Deployed via file:/// + markdown commands (GSD pattern)")

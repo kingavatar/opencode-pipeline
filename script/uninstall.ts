@@ -5,12 +5,7 @@ const home = process.env.HOME || process.env.USERPROFILE || "~"
 
 // Remove plugin file
 const pluginFile = join(home, ".config", "opencode", "plugins", "pipeline.js")
-try {
-  await rm(pluginFile, { force: true })
-  console.log(`Removed ${pluginFile}`)
-} catch {
-  // Already gone
-}
+try { await rm(pluginFile, { force: true }) } catch {}
 
 // Remove file:/// entry from opencode.json plugin array
 const configFile = join(home, ".config", "opencode", "opencode.json")
@@ -28,6 +23,14 @@ try {
 } catch (err) {
   console.error("Could not update opencode.json:", err)
 }
+
+// Remove command markdown files
+const commandsDir = join(home, ".config", "opencode", "commands")
+const cmdFiles = ["pipeline-init.md", "pipeline-resume.md", "pipeline-status.md", "pipeline-help.md"]
+for (const f of cmdFiles) {
+  try { await rm(join(commandsDir, f), { force: true }) } catch {}
+}
+console.log(`Removed pipeline command files`)
 
 // Prompt about pipeline storage
 const storageDir = join(home, ".local", "share", "opencode", "pipeline")

@@ -2,7 +2,6 @@ import type { Plugin } from "@opencode-ai/plugin"
 import type { AgentConfig } from "@opencode-ai/sdk"
 import { createAllAgents } from "./agents"
 import { pipeline_store, pipeline_load, pipeline_status } from "./tools"
-import { PIPELINE_COMMANDS } from "./commands"
 import { createSessionHooks, createCompactionHook } from "./hooks"
 import { loadConfig } from "./config/loader"
 import { DEFAULT_CONFIG } from "./config/types"
@@ -88,11 +87,7 @@ const PipelinePlugin: Plugin = async (ctx) => {
       }
 
       cfg.agent = { ...existingAgents, ...normalized }
-
-      const existingCommands = (cfg.command ?? {}) as Record<string, unknown>
-      cfg.command = { ...existingCommands, ...PIPELINE_COMMANDS }
-
-      log(debug, "Registered", Object.keys(normalized).length, "agents +", Object.keys(PIPELINE_COMMANDS).length, "commands")
+      log(debug, "Registered", Object.keys(normalized).length, "agents")
     },
 
     tool: {
