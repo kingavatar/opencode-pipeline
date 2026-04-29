@@ -192,6 +192,43 @@ describe("agent prompts", () => {
     expect(prompt).toContain("MAX 2 REFINE CYCLES")
   })
 
+  it("orchestrator Phase 2 contains decision register reading and Q&A loop", () => {
+    const prompt = agents["Pipeline Orchestrator"].prompt as string
+    expect(prompt).toContain("DECISION_REGISTER.md")
+    expect(prompt).toContain("pipeline_load")
+    expect(prompt).toContain("Q&A LOOP")
+    expect(prompt).toContain("maxReviewCycles")
+    expect(prompt).toContain("maxDecisionsPerReview")
+    expect(prompt).toContain("Reply 'approved' to lock in")
+    expect(prompt).toContain("REVISION REQUEST")
+    expect(prompt).toContain("final cycle")
+    expect(prompt).toContain("🔴 Critical")
+    expect(prompt).toContain("🟡 Important")
+    expect(prompt).toContain("⚪ Informational")
+  })
+
+  it("orchestrator Phase 7 contains artifact archival instructions", () => {
+    const prompt = agents["Pipeline Orchestrator"].prompt as string
+    expect(prompt).toContain("ARCHIVE PLANNING ARTIFACTS")
+    expect(prompt).toContain("sessions/$SESSION_ID")
+    expect(prompt).toContain("mv .planning/")
+    expect(prompt).toContain("DO NOT move TECH_STACK_BASELINE.md")
+    expect(prompt).toContain("RESEARCH_NOTES.md")
+  })
+
+  it("orchestrator still contains all existing phases after modifications", () => {
+    const prompt = agents["Pipeline Orchestrator"].prompt as string
+    expect(prompt).toContain("PHASE 0")
+    expect(prompt).toContain("PHASE 1")
+    expect(prompt).toContain("PHASE 2")
+    expect(prompt).toContain("PHASE 3")
+    expect(prompt).toContain("PHASE 4")
+    expect(prompt).toContain("PHASE 5")
+    expect(prompt).toContain("PHASE 6")
+    expect(prompt).toContain("PHASE 7")
+    expect(prompt).toContain("MAX 2 REFINE CYCLES")
+  })
+
   it("coder prompt contains strict grounding", () => {
     const prompt = agents["coder"].prompt as string
     expect(prompt).not.toContain("COMPLEX")
@@ -217,6 +254,27 @@ describe("agent prompts", () => {
     expect(prompt).toContain("<task")
     expect(prompt).toContain("<verify>")
     expect(prompt).toContain("LITERAL BASH COMMAND")
+  })
+
+  it("architect prompt contains ADR generation instructions", () => {
+    const prompt = agents["architect"].prompt as string
+    expect(prompt).toContain("DECISION_REGISTER.md")
+    expect(prompt).toContain("ADR")
+    expect(prompt).toContain("Severity")
+    expect(prompt).toContain("🔴 Critical")
+    expect(prompt).toContain("🟡 Important")
+    expect(prompt).toContain("⚪ Informational")
+    expect(prompt).toContain("Alternatives Considered")
+    expect(prompt).toContain("Tradeoffs")
+    expect(prompt).toContain("Consequences")
+  })
+
+  it("architect prompt still contains HLD and LLD after ADR insertion", () => {
+    const prompt = agents["architect"].prompt as string
+    expect(prompt).toContain("Component topology")
+    expect(prompt).toContain("<task")
+    expect(prompt).toContain("LITERAL BASH COMMAND")
+    expect(prompt).toContain("pipeline_store")
   })
 
   it("linter prompt is approval-biased", () => {

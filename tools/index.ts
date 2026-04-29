@@ -77,6 +77,7 @@ const _pipeline_status = tool({
     lines.push(`Workspace: ${workspaceId}`)
     lines.push(`Has PRD: ${preview.hasPrd}`)
     lines.push(`Has LLD: ${preview.hasLld}`)
+    lines.push(`Has Decision Register: ${preview.hasDecisionRegister}`)
     if (preview.state) {
       lines.push(`State preview: ${preview.state.slice(0, 300)}`)
     }

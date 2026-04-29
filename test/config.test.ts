@@ -223,6 +223,8 @@ describe("DEFAULT_CONFIG", () => {
 
   it("has workflow defaults", () => {
     expect(DEFAULT_CONFIG.workflow.maxRefineCycles).toBe(2)
+    expect(DEFAULT_CONFIG.workflow.maxReviewCycles).toBe(3)
+    expect(DEFAULT_CONFIG.workflow.maxDecisionsPerReview).toBe(5)
     expect(DEFAULT_CONFIG.workflow.skipPlanCheck).toBe(false)
     expect(DEFAULT_CONFIG.workflow.skipAudit).toBe(false)
     expect(DEFAULT_CONFIG.workflow.skipLinter).toBe(false)
@@ -246,8 +248,8 @@ describe("DEFAULT_CONFIG", () => {
     expect(Object.keys(DEFAULT_CONFIG.models).length).toBe(9)
   })
 
-  it("workflow object has exactly 6 keys", () => {
-    expect(Object.keys(DEFAULT_CONFIG.workflow).length).toBe(6)
+  it("workflow object has exactly 8 keys", () => {
+    expect(Object.keys(DEFAULT_CONFIG.workflow).length).toBe(8)
   })
 
   it("git object has exactly 4 keys", () => {

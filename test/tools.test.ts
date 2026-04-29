@@ -72,6 +72,17 @@ describe("pipeline_store", () => {
     }
   })
 
+  it("accepts DECISION_REGISTER.md as valid storage key", async () => {
+    const result = await pipeline_store.execute!(
+      { key: "DECISION_REGISTER.md", content: "# Decision Register\n\n## ADR-001: Test\n- **Severity**: ⚪ Informational\n- **Context**: test\n- **Decision**: test\n- **Alternatives**: none\n- **Tradeoffs**: none\n- **Consequences**: none", mode: "write" },
+      MOCK_CONTEXT
+    )
+    expect(result).toContain("Stored DECISION_REGISTER.md")
+    const loaded = await loadState(wsId, "DECISION_REGISTER.md")
+    expect(loaded).toContain("ADR-001")
+    expect(loaded).toContain("Test")
+  })
+
   // Modes
   it("append mode appends", async () => {
     await storeState(wsId, "STATE.md", "first")
@@ -225,6 +236,19 @@ describe("pipeline_load", () => {
   it("returns error when no workspace context", async () => {
     const result = await pipeline_load.execute!({ key: "STATE.md" }, {} as any)
     expect(result).toContain("no workspace context")
+  })
+
+  it("loads stored DECISION_REGISTER.md content", async () => {
+    await pipeline_store.execute!(
+      { key: "DECISION_REGISTER.md", content: "## ADR-001: Test decision", mode: "write" },
+      MOCK_CONTEXT
+    )
+    const result = await pipeline_load.execute!(
+      { key: "DECISION_REGISTER.md" },
+      MOCK_CONTEXT
+    )
+    expect(result).toContain("ADR-001")
+    expect(result).toContain("Test decision")
   })
 })
 

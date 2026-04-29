@@ -17,6 +17,8 @@ export interface PipelineModelConfig {
 
 export interface PipelineWorkflowConfig {
   maxRefineCycles: number
+  maxReviewCycles: number
+  maxDecisionsPerReview: number
   skipPlanCheck: boolean
   skipAudit: boolean
   skipLinter: boolean
@@ -58,6 +60,8 @@ export const DEFAULT_CONFIG: PipelineConfig = {
   },
   workflow: {
     maxRefineCycles: 2,
+    maxReviewCycles: 3,
+    maxDecisionsPerReview: 5,
     skipPlanCheck: false,
     skipAudit: false,
     skipLinter: false,

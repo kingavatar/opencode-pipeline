@@ -28,21 +28,23 @@ describe("STORAGE_ROOT", () => {
 })
 
 describe("STATE_KEYS", () => {
-  it("has exactly 5 keys", () => {
-    expect(STATE_KEYS.length).toBe(5)
+  it("has exactly 6 keys", () => {
+    expect(STATE_KEYS.length).toBe(6)
   })
 
   it("contains all expected keys", () => {
     expect(STATE_KEYS).toContain("STATE.md")
     expect(STATE_KEYS).toContain("PRD.md")
     expect(STATE_KEYS).toContain("LLD.md")
+    expect(STATE_KEYS).toContain("DECISION_REGISTER.md")
     expect(STATE_KEYS).toContain("TECH_STACK_BASELINE.md")
     expect(STATE_KEYS).toContain("HISTORY.md")
   })
 
   it("keys are in the expected order", () => {
     expect(STATE_KEYS[0]).toBe("STATE.md")
-    expect(STATE_KEYS[4]).toBe("HISTORY.md")
+    expect(STATE_KEYS[3]).toBe("DECISION_REGISTER.md")
+    expect(STATE_KEYS[5]).toBe("HISTORY.md")
   })
 })
 
@@ -243,7 +245,7 @@ describe("storeState and loadState", () => {
     expect(result).toBe("line1\nline2\n")
   })
 
-  it("loadState with maxLines=1 returns last line only", async () => {
+  it("loadState with maxLines=1 returns empty for trailing-newline content", async () => {
     await storeState(wsId, "STATE.md", "a\nb\nc")
     const result = await loadState(wsId, "STATE.md", 1)
     expect(result).toBe("")
@@ -524,6 +526,7 @@ describe("getStatePreview", () => {
     expect(preview.lastSession).toBeNull()
     expect(preview.hasPrd).toBe(false)
     expect(preview.hasLld).toBe(false)
+    expect(preview.hasDecisionRegister).toBe(false)
   })
 
   it("detects PRD and LLD existence", async () => {
@@ -532,6 +535,7 @@ describe("getStatePreview", () => {
     const preview = await getStatePreview(wsId)
     expect(preview.hasPrd).toBe(true)
     expect(preview.hasLld).toBe(true)
+    expect(preview.hasDecisionRegister).toBe(false)
   })
 
   it("returns state preview", async () => {
@@ -551,11 +555,13 @@ describe("getStatePreview", () => {
     await storeState(wsId, "STATE.md", "phase=5")
     await storeState(wsId, "PRD.md", "build a thing")
     await storeState(wsId, "LLD.md", "detailed plan")
+    await storeState(wsId, "DECISION_REGISTER.md", "ADR-001: test")
     await appendHistory(wsId, "session done")
     const preview = await getStatePreview(wsId)
     expect(preview.state).toContain("phase=5")
     expect(preview.hasPrd).toBe(true)
     expect(preview.hasLld).toBe(true)
+    expect(preview.hasDecisionRegister).toBe(true)
     expect(preview.lastSession).toContain("session done")
   })
 
@@ -565,6 +571,7 @@ describe("getStatePreview", () => {
     expect(preview.state).toContain("just state")
     expect(preview.hasPrd).toBe(false)
     expect(preview.hasLld).toBe(false)
+    expect(preview.hasDecisionRegister).toBe(false)
     expect(preview.lastSession).toBeNull()
   })
 
@@ -580,5 +587,6 @@ describe("getStatePreview", () => {
     expect(preview.state).toBeNull()
     expect(preview.hasPrd).toBe(false)
     expect(preview.hasLld).toBe(false)
+    expect(preview.hasDecisionRegister).toBe(false)
   })
 })

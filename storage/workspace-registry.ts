@@ -16,6 +16,7 @@ export const STATE_KEYS = [
   "STATE.md",
   "PRD.md",
   "LLD.md",
+  "DECISION_REGISTER.md",
   "TECH_STACK_BASELINE.md",
   "HISTORY.md",
 ] as const
@@ -150,11 +151,13 @@ export async function getStatePreview(workspaceId: string): Promise<{
   lastSession: string | null
   hasPrd: boolean
   hasLld: boolean
+  hasDecisionRegister: boolean
 }> {
   const state = await loadState(workspaceId, "STATE.md")
   const lastSession = await getLastSessionEntry(workspaceId)
   const hasPrd = existsSync(join(workspaceDir(workspaceId), "PRD.md"))
   const hasLld = existsSync(join(workspaceDir(workspaceId), "LLD.md"))
+  const hasDecisionRegister = existsSync(join(workspaceDir(workspaceId), "DECISION_REGISTER.md"))
 
-  return { state, lastSession, hasPrd, hasLld }
+  return { state, lastSession, hasPrd, hasLld, hasDecisionRegister }
 }
