@@ -3,6 +3,7 @@ import {
   registerWorkspace,
   getWorkspaceId,
   appendHistory,
+  pruneHistory,
   loadState,
 } from "../storage"
 
@@ -16,6 +17,7 @@ interface HooksOptions {
   branchPrefix: string
   autoCleanup: boolean
   baseBranch: string
+  maxHistoryEntries: number
 }
 
 export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
@@ -79,17 +81,40 @@ export function createSessionHooks(ctx: HooksContext, opts: HooksOptions) {
       if (!branchName) return
 
       try {
-        await $`git -C ${cwd} checkout ${opts.baseBranch} 2>/dev/null`.quiet()
-        const mergeResult = await $`git -C ${cwd} merge --no-ff --no-edit ${branchName} 2>/dev/null`.nothrow().quiet()
+        const baseExists = (await $`git -C ${cwd} rev-parse --verify ${opts.baseBranch} 2>/dev/null`.nothrow().quiet()).exitCode === 0
+        if (baseExists) {
+          await $`git -C ${cwd} checkout ${opts.baseBranch} 2>/dev/null`.quiet()
+          await $`git -C ${cwd} merge --no-ff --no-edit ${branchName} 2>/dev/null`.nothrow().quiet()
+        }
         sessionBranches.delete(sessionID)
-        if (mergeResult.exitCode === 0) {
-          const workspaceId = getWorkspaceId(cwd)
-          const state = await loadState(workspaceId, "STATE.md")
-          const summary = state ? state.split("\n")[0]?.slice(0, 80) : "completed"
-          await appendHistory(workspaceId, `completed | ${summary}`)
+        const workspaceId = getWorkspaceId(cwd)
+        const state = await loadState(workspaceId, "STATE.md")
+        const summary = state ? state.split("\n")[0]?.slice(0, 80) : "completed"
+        await appendHistory(workspaceId, `completed | ${summary}`)
+        if (opts.maxHistoryEntries > 0) {
+          await pruneHistory(workspaceId, opts.maxHistoryEntries)
         }
       } catch {
         // Non-blocking: branch cleanup is optional
+      }
+    },
+
+    onSessionDeleted: async (sessionID: string) => {
+      if (!opts.autoBranch || !opts.autoCleanup) return
+
+      const cwd = ctx.worktree || ctx.directory
+      const branchName = sessionBranches.get(sessionID)
+      if (!branchName) return
+
+      try {
+        const baseExists = (await $`git -C ${cwd} rev-parse --verify ${opts.baseBranch} 2>/dev/null`.nothrow().quiet()).exitCode === 0
+        if (baseExists) {
+          await $`git -C ${cwd} checkout ${opts.baseBranch} 2>/dev/null`.quiet()
+          await $`git -C ${cwd} branch -D ${branchName} 2>/dev/null`.quiet()
+        }
+        sessionBranches.delete(sessionID)
+      } catch {
+        // Non-blocking
       }
     },
   }

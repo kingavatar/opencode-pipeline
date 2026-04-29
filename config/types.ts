@@ -39,7 +39,7 @@ export interface PipelineConfig {
 
 export const DEFAULT_CONFIG: PipelineConfig = {
   storage: {
-    root: "~/.local/share/opencode/pipeline",
+    root: "",
     maxHistoryEntries: 50,
   },
   models: {

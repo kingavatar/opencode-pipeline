@@ -134,6 +134,17 @@ export async function appendHistory(workspaceId: string, entry: string): Promise
   await storeState(workspaceId, "HISTORY.md", header, "append")
 }
 
+export async function pruneHistory(workspaceId: string, maxEntries: number): Promise<void> {
+  if (maxEntries <= 0) return
+  const history = await loadState(workspaceId, "HISTORY.md")
+  if (!history) return
+  const entries = history.split("\n## Session:")
+  if (entries.length <= maxEntries + 1) return
+  const kept = entries.slice(-maxEntries)
+  const pruned = (entries.length > 1 ? "## Session:" : "") + kept.join("\n## Session:")
+  await storeState(workspaceId, "HISTORY.md", pruned)
+}
+
 export async function getStatePreview(workspaceId: string): Promise<{
   state: string | null
   lastSession: string | null

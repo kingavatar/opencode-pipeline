@@ -7,6 +7,7 @@ export {
   loadState,
   getLastSessionEntry,
   appendHistory,
+  pruneHistory,
   getStatePreview,
 } from "./workspace-registry"
 

@@ -5,10 +5,62 @@ import type { PipelineConfig } from "./types"
 import { DEFAULT_CONFIG } from "./types"
 
 function stripJsonComments(raw: string): string {
-  return raw
-    .replace(/\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/,\s*([}\]])/g, "$1")
+  const lines = raw.split("\n")
+  const out: string[] = []
+  let inBlockComment = false
+
+  for (const line of lines) {
+    if (inBlockComment) {
+      const end = line.indexOf("*/")
+      if (end === -1) continue
+      inBlockComment = false
+      out.push(" ".repeat(end + 2) + line.slice(end + 2))
+      continue
+    }
+
+    let result = ""
+    let inString = false
+    let stringChar = ""
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+
+      if (!inString) {
+        if (ch === "/" && line[i + 1] === "/") break
+        if (ch === "/" && line[i + 1] === "*") {
+          inBlockComment = true
+          const rest = line.slice(i + 2)
+          const end = rest.indexOf("*/")
+          if (end !== -1) {
+            i = i + 2 + end + 1
+            inBlockComment = false
+            result += " ".repeat(end + 4)
+            continue
+          }
+          break
+        }
+        if (ch === '"' || ch === "'") {
+          inString = true
+          stringChar = ch
+        }
+        result += ch
+      } else {
+        result += ch
+        if (ch === "\\") {
+          i++
+          if (i < line.length) result += line[i]
+          continue
+        }
+        if (ch === stringChar) {
+          inString = false
+        }
+      }
+    }
+
+    out.push(result)
+  }
+
+  return out.join("\n").replace(/,\s*([}\]])/g, "$1")
 }
 
 export async function loadConfig(directory: string): Promise<PipelineConfig> {

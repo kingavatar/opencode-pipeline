@@ -31,6 +31,7 @@ const PipelinePlugin: Plugin = async (ctx) => {
       branchPrefix: config.git.branchPrefix,
       autoCleanup: config.git.autoCleanupBranches,
       baseBranch: config.git.baseBranch,
+      maxHistoryEntries: config.storage.maxHistoryEntries,
     },
   )
 
@@ -66,6 +67,14 @@ const PipelinePlugin: Plugin = async (ctx) => {
           const sessionID = props?.sessionID
           if (sessionID) {
             await sessionHooks.onSessionIdle(sessionID)
+          }
+        }
+
+        if (event.type === "session.deleted") {
+          const props = event.properties as { sessionID?: string } | undefined
+          const sessionID = props?.sessionID
+          if (sessionID) {
+            await sessionHooks.onSessionDeleted(sessionID)
           }
         }
       } catch (err) {

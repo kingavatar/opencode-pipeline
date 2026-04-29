@@ -8,6 +8,20 @@ import {
   getStatePreview,
 } from "../storage"
 
+function validateKey(key: unknown): string | (typeof STATE_KEYS)[number] {
+  const k = key as string
+  if (!(STATE_KEYS as readonly string[]).includes(k)) {
+    return `Invalid key '${k}'. Valid keys: ${STATE_KEYS.join(", ")}`
+  }
+  return k as (typeof STATE_KEYS)[number]
+}
+
+function getCwd(context: { worktree?: string; directory?: string }): string | null {
+  const cwd = context.worktree || context.directory
+  if (!cwd) return null
+  return cwd
+}
+
 const _pipeline_store = tool({
   description:
     "Persist pipeline state to centralized storage at ~/.local/share/opencode/pipeline/<workspace-id>/",
@@ -17,18 +31,15 @@ const _pipeline_store = tool({
     mode: tool.schema.string().default("write").describe("Write mode: write or append"),
   },
   async execute(args, context) {
-    const cwd = context.worktree || context.directory
+    const cwd = getCwd(context)
     if (!cwd) return "Error: no workspace context available"
     const workspaceId = getWorkspaceId(cwd)
     await registerWorkspace(cwd)
-    const key = args.key as string
-    if (!(STATE_KEYS as readonly string[]).includes(key)) {
-      return `Invalid key '${key}'. Valid keys: ${STATE_KEYS.join(", ")}`
-    }
-    const validKey = key as (typeof STATE_KEYS)[number]
+    const validKey = validateKey(args.key)
+    if (typeof validKey === "string") return validKey
     const mode = (args.mode ?? "write") as "write" | "append"
     await storeState(workspaceId, validKey, String(args.content), mode)
-    return `Stored ${key} for workspace ${workspaceId}`
+    return `Stored ${validKey} for workspace ${workspaceId}`
   },
 })
 
@@ -39,18 +50,15 @@ const _pipeline_load = tool({
     lines: tool.schema.number().optional().describe("Max lines to return"),
   },
   async execute(args, context) {
-    const cwd = context.worktree || context.directory
+    const cwd = getCwd(context)
     if (!cwd) return "Error: no workspace context available"
     const workspaceId = getWorkspaceId(cwd)
     await registerWorkspace(cwd)
-    const key = args.key as string
-    if (!(STATE_KEYS as readonly string[]).includes(key)) {
-      return `Invalid key '${key}'. Valid keys: ${STATE_KEYS.join(", ")}`
-    }
-    const validKey = key as (typeof STATE_KEYS)[number]
+    const validKey = validateKey(args.key)
+    if (typeof validKey === "string") return validKey
     const content = await loadState(workspaceId, validKey, Number(args.lines ?? 0))
     if (content === null) {
-      return `No saved state for ${key} in workspace ${workspaceId}`
+      return `No saved state for ${validKey} in workspace ${workspaceId}`
     }
     return content
   },
@@ -60,7 +68,7 @@ const _pipeline_status = tool({
   description: "Get current pipeline status for this workspace",
   args: {},
   async execute(_args, context) {
-    const cwd = context.worktree || context.directory
+    const cwd = getCwd(context)
     if (!cwd) return "Error: no workspace context available"
     const workspaceId = getWorkspaceId(cwd)
     await registerWorkspace(cwd)
