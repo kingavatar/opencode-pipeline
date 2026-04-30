@@ -63,6 +63,7 @@ describe("prompt-utils constants", () => {
 
   it("TECH_STACK_BASELINE_NOTICE contains tech stack reference", () => {
     expect(TECH_STACK_BASELINE_NOTICE).toContain("TECH_STACK_BASELINE.md")
+    expect(TECH_STACK_BASELINE_NOTICE).toContain("pipeline_load")
     expect(TECH_STACK_BASELINE_NOTICE).toContain("ecosystem")
   })
 
@@ -210,10 +211,10 @@ describe("agent prompts", () => {
   it("orchestrator Phase 7 contains artifact archival instructions", () => {
     const prompt = agents["Pipeline Orchestrator"].prompt as string
     expect(prompt).toContain("ARCHIVE PLANNING ARTIFACTS")
-    expect(prompt).toContain("sessions/$SESSION_ID")
-    expect(prompt).toContain("mv .planning/")
-    expect(prompt).toContain("DO NOT move TECH_STACK_BASELINE.md")
-    expect(prompt).toContain("RESEARCH_NOTES.md")
+    expect(prompt).toContain("pipeline_store")
+    expect(prompt).toContain("SESSION_ID")
+    expect(prompt).toContain("DO NOT archive TECH_STACK_BASELINE.md")
+    expect(prompt).toContain("NO bash commands")
   })
 
   it("orchestrator still contains all existing phases after modifications", () => {
@@ -351,6 +352,46 @@ describe("agent prompts", () => {
     expect(prompt).toContain("ALWAYS delegate")
     expect(prompt).toContain("NEVER write")
     expect(prompt).toContain("Only coder and coder-pro")
+  })
+
+  it("orchestrator contains zero .planning/ references", () => {
+    const prompt = agents["Pipeline Orchestrator"].prompt as string
+    expect(prompt).not.toContain(".planning/")
+  })
+
+  it("architect uses pipeline_load not .planning/", () => {
+    const prompt = agents["architect"].prompt as string
+    expect(prompt).toContain("pipeline_load")
+    expect(prompt).not.toContain(".planning/")
+  })
+
+  it("plan-checker uses pipeline_load not .planning/", () => {
+    const prompt = agents["plan-checker"].prompt as string
+    expect(prompt).toContain("pipeline_load")
+    expect(prompt).not.toContain(".planning/")
+  })
+
+  it("coder uses pipeline_load not .planning/", () => {
+    const prompt = agents["coder"].prompt as string
+    expect(prompt).toContain("pipeline_load")
+    expect(prompt).not.toContain(".planning/")
+  })
+
+  it("linter uses pipeline_load not .planning/", () => {
+    const prompt = agents["linter"].prompt as string
+    expect(prompt).toContain("pipeline_load")
+    expect(prompt).not.toContain(".planning/")
+  })
+
+  it("orchestrator bash allowlist has no mv/mkdir/ls", () => {
+    const perm = agents["Pipeline Orchestrator"].permission as any
+    const bash = perm?.bash as Record<string, string> | undefined
+    if (bash) {
+      const keys = Object.keys(bash)
+      expect(keys).not.toContain("mkdir -p sessions/*")
+      expect(keys).not.toContain("mv .planning/* sessions/*")
+      expect(keys).not.toContain("ls sessions/*")
+    }
   })
 })
 

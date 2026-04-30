@@ -8,7 +8,7 @@ descriptive error messages. Do not minify or truncate code.`
 
 export const TECH_STACK_BASELINE_NOTICE = `TECH STACK BASELINE:
 When invoking docs-researcher or fetching external information, always include
-the tech stack context from .planning/TECH_STACK_BASELINE.md.
+the tech stack context via pipeline_load('TECH_STACK_BASELINE.md').
 This scopes all searches to the correct ecosystem.`
 
 export const CIRCUIT_BREAKER = `CIRCUIT BREAKER:

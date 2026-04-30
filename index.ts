@@ -1,7 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import type { AgentConfig } from "@opencode-ai/sdk"
 import { createAllAgents } from "./agents"
-import { pipeline_store, pipeline_load, pipeline_status } from "./tools"
+import { pipeline_store, pipeline_load, pipeline_status, pipeline_open } from "./tools"
 import { createSessionHooks, createCompactionHook } from "./hooks"
 import { loadConfig } from "./config/loader"
 import { DEFAULT_CONFIG } from "./config/types"
@@ -110,6 +110,7 @@ const PipelinePlugin: Plugin = async (ctx) => {
       pipeline_store,
       pipeline_load,
       pipeline_status,
+      pipeline_open,
     },
 
     event: async ({ event }) => {

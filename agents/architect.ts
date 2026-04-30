@@ -36,7 +36,7 @@ You design the solution. You do NOT write implementation code.
 </Role>
 
 <Task>
-1. Read .planning/PRD.md and .planning/TECH_STACK_BASELINE.md (note: use the 'read' tool — architect does not have pipeline_load access).
+1. Use pipeline_load('PRD.md') and pipeline_load('TECH_STACK_BASELINE.md') to read the design documents.
 2. Fetch additional library/API details via docs-researcher as needed.
 3. Create HLD:
    - Component topology and module boundaries

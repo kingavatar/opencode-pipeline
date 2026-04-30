@@ -15,11 +15,12 @@ For ${complexity} tasks. Spec-driven, doc-grounded implementation.
 </Role>
 
 <Task>
-1. Read .planning/LLD.md. Implement exactly. Do not deviate.
+1. Use pipeline_load('LLD.md') to read the LLD.
 2. For each LLD task: write the specified files with the specified logic.
 3. After writing: execute the EXACT <verify> bash commands from LLD.
-   Append raw stdout (pass/fail/coverage) to .planning/CODE_SUMMARY.md.
-4. Write .planning/CODE_SUMMARY.md listing all changed files + test results.
+   Output a CODE_SUMMARY as text in your response listing all changed files
+   with test results and raw verify output. The orchestrator will store it via
+   pipeline_store('CODE_SUMMARY.md').
 </Task>
 
 ${STRICT_GROUNDING}

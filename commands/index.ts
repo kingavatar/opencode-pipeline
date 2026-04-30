@@ -17,7 +17,7 @@ Step 2: If prior state exists, show the user a summary (last phase, progress, de
 Step 3: If starting fresh OR no prior state, begin Pipeline Phase 0 (Early Research).
   - Ask the user what they want to build.
   - Then invoke docs-researcher for a lightweight domain/tech scan.
-  - Write .planning/RESEARCH_NOTES.md and .planning/TECH_STACK_BASELINE.md using pipeline_store.
+  - Write RESEARCH_NOTES.md and TECH_STACK_BASELINE.md using pipeline_store.
 
 Proceed to Phase 1 after user confirms readiness.`,
   },

@@ -1,4 +1,4 @@
-import { join } from "path"
+import { join, dirname } from "path"
 import { mkdir, readFile, writeFile, appendFile, rename } from "fs/promises"
 import { existsSync } from "fs"
 import { createHash } from "crypto"
@@ -18,7 +18,13 @@ export const STATE_KEYS = [
   "LLD.md",
   "DECISION_REGISTER.md",
   "TECH_STACK_BASELINE.md",
+  "RESEARCH_NOTES.md",
   "HISTORY.md",
+  "HLD.md",
+  "AUDIT_REPORT.md",
+  "LINT_REPORT.md",
+  "PLAN_CHECK.md",
+  "CODE_SUMMARY.md",
 ] as const
 
 export type StateKey = (typeof STATE_KEYS)[number]
@@ -91,6 +97,7 @@ export async function storeState(
   const dir = workspaceDir(workspaceId)
   await mkdir(dir, { recursive: true })
   const filePath = join(dir, key)
+  await mkdir(dirname(filePath), { recursive: true })
 
   if (mode === "append") {
     await appendFile(filePath, content + "\n")
@@ -152,12 +159,24 @@ export async function getStatePreview(workspaceId: string): Promise<{
   hasPrd: boolean
   hasLld: boolean
   hasDecisionRegister: boolean
+  hasHld: boolean
+  hasAuditReport: boolean
+  hasLintReport: boolean
+  hasPlanCheck: boolean
+  hasCodeSummary: boolean
+  hasResearchNotes: boolean
 }> {
   const state = await loadState(workspaceId, "STATE.md")
   const lastSession = await getLastSessionEntry(workspaceId)
   const hasPrd = existsSync(join(workspaceDir(workspaceId), "PRD.md"))
   const hasLld = existsSync(join(workspaceDir(workspaceId), "LLD.md"))
   const hasDecisionRegister = existsSync(join(workspaceDir(workspaceId), "DECISION_REGISTER.md"))
+  const hasHld = existsSync(join(workspaceDir(workspaceId), "HLD.md"))
+  const hasAuditReport = existsSync(join(workspaceDir(workspaceId), "AUDIT_REPORT.md"))
+  const hasLintReport = existsSync(join(workspaceDir(workspaceId), "LINT_REPORT.md"))
+  const hasPlanCheck = existsSync(join(workspaceDir(workspaceId), "PLAN_CHECK.md"))
+  const hasCodeSummary = existsSync(join(workspaceDir(workspaceId), "CODE_SUMMARY.md"))
+  const hasResearchNotes = existsSync(join(workspaceDir(workspaceId), "RESEARCH_NOTES.md"))
 
-  return { state, lastSession, hasPrd, hasLld, hasDecisionRegister }
+  return { state, lastSession, hasPrd, hasLld, hasDecisionRegister, hasHld, hasAuditReport, hasLintReport, hasPlanCheck, hasCodeSummary, hasResearchNotes }
 }

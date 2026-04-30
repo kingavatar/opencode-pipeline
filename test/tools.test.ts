@@ -5,6 +5,7 @@ import {
   pipeline_store,
   pipeline_load,
   pipeline_status,
+  pipeline_open,
 } from "../tools/index"
 import {
   getWorkspaceId,
@@ -302,6 +303,12 @@ describe("pipeline_status", () => {
     expect(result).toContain("Last session:")
   })
 
+  it("shows Storage line with correct path", async () => {
+    const result = await pipeline_status.execute!({}, MOCK_CONTEXT)
+    expect(result).toContain("Storage:")
+    expect(result).toContain("/.local/share/opencode/pipeline")
+  })
+
   it("state preview longer than 300 chars is truncated", async () => {
     const long = "x".repeat(500)
     await storeState(wsId, "STATE.md", long)
@@ -316,5 +323,34 @@ describe("pipeline_status", () => {
   it("returns error when no workspace context", async () => {
     const result = await pipeline_status.execute!({}, {} as any)
     expect(result).toContain("no workspace context")
+  })
+})
+
+describe("pipeline_open", () => {
+  let wsId: string
+
+  beforeEach(async () => {
+    wsId = await registerWorkspace(TEST_WS)
+  })
+
+  afterEach(async () => {
+    await rm(join(STORAGE_ROOT, wsId), { recursive: true, force: true })
+  })
+
+  it("returns storage path for workspace", async () => {
+    const result = await pipeline_open.execute!({}, MOCK_CONTEXT)
+    expect(result).toContain(STORAGE_ROOT)
+    expect(result).toContain(wsId)
+  })
+
+  it("returns error when no workspace context", async () => {
+    const result = await pipeline_open.execute!({}, {} as any)
+    expect(result).toContain("no workspace context")
+  })
+
+  it("returns path that exists after registration", async () => {
+    const result = await pipeline_open.execute!({}, MOCK_CONTEXT)
+    const { existsSync } = await import("fs")
+    expect(existsSync(result)).toBe(true)
   })
 })

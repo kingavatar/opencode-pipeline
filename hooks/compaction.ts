@@ -3,7 +3,7 @@ export function createCompactionHook() {
     output.context.push(`## Pipeline State (Persist Across Compaction)
 Include these in the continuation summary:
 
-- Current pipeline phase and progress (from .planning/STATE.md)
+- Current pipeline phase and progress (via pipeline_load('STATE.md'))
 - Active git branch if pipeline session
 - Any locked decisions from this session
 - Next step in the pipeline workflow

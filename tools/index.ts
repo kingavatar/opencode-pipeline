@@ -1,3 +1,4 @@
+import { join } from "path"
 import { tool } from "@opencode-ai/plugin"
 import {
   getWorkspaceId,
@@ -6,11 +7,16 @@ import {
   registerWorkspace,
   STATE_KEYS,
   getStatePreview,
+  STORAGE_ROOT,
 } from "../storage"
 
 function validateKey(key: unknown): { ok: true; key: (typeof STATE_KEYS)[number] } | { ok: false; error: string } {
   const k = key as string
   if (!(STATE_KEYS as readonly string[]).includes(k)) {
+    // Accept session-prefixed keys for archival (e.g. "session-20260430-123456/PRD.md")
+    if (typeof k === "string" && /^session-\d{8}-\d{6}\/[A-Z_]+\.md$/.test(k)) {
+      return { ok: true, key: k as (typeof STATE_KEYS)[number] }
+    }
     return { ok: false, error: `Invalid key '${k}'. Valid keys: ${STATE_KEYS.join(", ")}` }
   }
   return { ok: true, key: k as (typeof STATE_KEYS)[number] }
@@ -26,7 +32,7 @@ const _pipeline_store = tool({
   description:
     "Persist pipeline state to centralized storage at ~/.local/share/opencode/pipeline/<workspace-id>/",
   args: {
-    key: tool.schema.string().describe("State file key (STATE.md, PRD.md, LLD.md, TECH_STACK_BASELINE.md, HISTORY.md)"),
+    key: tool.schema.string().describe("State file key (STATE.md, PRD.md, LLD.md, DECISION_REGISTER.md, TECH_STACK_BASELINE.md, RESEARCH_NOTES.md, HISTORY.md, HLD.md, AUDIT_REPORT.md, LINT_REPORT.md, PLAN_CHECK.md, CODE_SUMMARY.md, or session-prefixed key)"),
     content: tool.schema.string().describe("Content to write"),
     mode: tool.schema.string().default("write").describe("Write mode: write or append"),
   },
@@ -75,9 +81,11 @@ const _pipeline_status = tool({
     const preview = await getStatePreview(workspaceId)
     const lines: string[] = []
     lines.push(`Workspace: ${workspaceId}`)
+    lines.push(`Storage: ${join(STORAGE_ROOT, workspaceId)}`)
     lines.push(`Has PRD: ${preview.hasPrd}`)
     lines.push(`Has LLD: ${preview.hasLld}`)
     lines.push(`Has Decision Register: ${preview.hasDecisionRegister}`)
+    lines.push(`Has Research Notes: ${preview.hasResearchNotes}`)
     if (preview.state) {
       lines.push(`State preview: ${preview.state.slice(0, 300)}`)
     }
@@ -88,6 +96,18 @@ const _pipeline_status = tool({
   },
 })
 
+const _pipeline_open = tool({
+  description: "Open pipeline storage directory for current workspace",
+  args: tool.schema.object({}),
+  async execute(_args, context) {
+    const cwd = getCwd(context)
+    if (!cwd) return "Error: no workspace context"
+    const workspaceId = await registerWorkspace(cwd)
+    return join(STORAGE_ROOT, workspaceId)
+  },
+})
+
 export const pipeline_store = _pipeline_store
 export const pipeline_load = _pipeline_load
 export const pipeline_status = _pipeline_status
+export const pipeline_open = _pipeline_open

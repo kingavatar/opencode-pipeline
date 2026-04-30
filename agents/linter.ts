@@ -44,7 +44,7 @@ If code implements the LLD correctly, output PASS even if you'd write it differe
 </Bias>
 
 <Task>
-1. Read .planning/LLD.md.
+1. Use pipeline_load('LLD.md') to read the LLD.
 2. Read the code diff (changed files).
 3. For each LLD task:
    - Do the specified files exist? Were they created/modified?

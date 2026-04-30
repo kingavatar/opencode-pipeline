@@ -34,7 +34,7 @@ Pre-execution gate. Catches gaps when they're cheap to fix.
 </Role>
 
 <Task>
-1. Read .planning/PRD.md and .planning/LLD.md.
+1. Use pipeline_load('PRD.md') and pipeline_load('LLD.md') to read the design documents.
 2. For each PRD requirement:
    - Is there a corresponding LLD task? If not: flag as MISSING.
    - Is the task sufficiently detailed (files, action, verify)? If not: flag as INCOMPLETE.
