@@ -268,10 +268,10 @@ describe("permissionToTools", () => {
     if (!perm || typeof perm !== "object") return {}
     const tools: Record<string, boolean> = {}
     if (perm.edit === "deny") { tools.write = false; tools.edit = false }
-    if (perm.bash === "deny" || (perm.bash && typeof perm.bash === "object" && (perm.bash as Record<string, string>)["*"] === "deny")) {
+    if (perm.bash === "deny") {
       tools.bash = false
     }
-    if (perm.task === "deny" || (perm.task && typeof perm.task === "object" && (perm.task as Record<string, string>)["*"] === "deny")) {
+    if (perm.task === "deny") {
       tools.task = false
     }
     if (perm.webfetch === "deny") tools.webfetch = false
@@ -309,9 +309,9 @@ describe("permissionToTools", () => {
     expect(result.bash).toBe(false)
   })
 
-  it("converts bash deny (nested with *) to bash false", () => {
+  it("does NOT set bash false for nested * deny without overrides", () => {
     const result = permissionToTools({ bash: { "*": "deny" } })
-    expect(result.bash).toBe(false)
+    expect(result.bash).toBeUndefined()
   })
 
   it("does NOT set bash false when bash allows specific commands", () => {
@@ -324,15 +324,25 @@ describe("permissionToTools", () => {
     expect(result.task).toBe(false)
   })
 
-  it("converts task deny (nested with *) to task false", () => {
+  it("does NOT set task false for nested * deny without overrides", () => {
     const result = permissionToTools({ task: { "*": "deny" } })
+    expect(result.task).toBeUndefined()
+  })
+
+  it("does NOT set task false when scoped allow overrides exist", () => {
+    // tools map doesn't support scoping; permission object handles scope
+    const result = permissionToTools({ task: { "*": "deny", coder: "allow" } })
+    expect(result.task).toBeUndefined()
+  })
+
+  it("still sets task false for flat task deny string", () => {
+    const result = permissionToTools({ task: "deny" })
     expect(result.task).toBe(false)
   })
 
-  it("sets task false when * is deny even with allow overrides", () => {
-    // tools map doesn't support scoping; if * is deny, task is disabled
-    const result = permissionToTools({ task: { "*": "deny", coder: "allow" } })
-    expect(result.task).toBe(false)
+  it("still sets bash false for flat bash deny string", () => {
+    const result = permissionToTools({ bash: "deny" })
+    expect(result.bash).toBe(false)
   })
 
   it("converts webfetch/websearch deny", () => {
@@ -406,12 +416,10 @@ describe("permissionToTools", () => {
     expect(result.question).toBe(false)
     expect(result.skill).toBe(false)
     expect(result.websearch).toBe(false)
-    // task is not "deny" directly — nested object with *: deny
-    // BUT the * is deny, so task should be false
-    // Wait — the check is: (perm.task as Record<string,string>)["*"] === "deny")
-    // For this reviewer, task["*"] IS "deny", so task should be false
-    // Actually, looking at the logic: the reviewer has task["*"]="deny" + task["docs-researcher"]="allow"
-    // The "*" IS deny so it sets task=false. But we want task enabled (scoped).
-    // This is expected - the tools map doesn't support scoping, so task gets disabled.
+    // task is scoped object ({ "*": "deny", "docs-researcher": "allow" })
+    // — NOT flat "deny" string. permissionToTools does NOT set tools.task=false
+    // for objects. The permission object handles scope enforcement at runtime.
+    // This test deliberately does NOT assert on result.task because it should
+    // remain undefined (tools map cannot express scoped permissions).
   })
 })

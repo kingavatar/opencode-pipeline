@@ -22,7 +22,7 @@ export function createArchitect(model: string): AgentConfig {
       glob: "allow",
       grep: "allow",
       lsp: "allow",
-      todowrite: "allow",
+      todowrite: "deny",
       webfetch: "ask",
       task: {
         "*": "deny",
@@ -88,7 +88,7 @@ NO placeholders. NO "run tests". Write the EXACT command.
 Example: <verify>npm run test -- src/auth.test.ts</verify>
 Example: <verify>curl -X POST http://localhost:3000/api/login -d '{"email":"test@test.com","password":"test123"}'</verify>
 
-Write LLD.md to .planning/.
+Output LLD as an XML code block in your response. The orchestrator will store it via pipeline_store.
 </Task>
 
 <Design Principles>
@@ -98,6 +98,21 @@ Write LLD.md to .planning/.
 - Edge cases are identified and handled.
 - API signatures come from DOCS, not memory.
 </Design Principles>
+
+<Constraints>
+- DESIGN ONLY. You are FORBIDDEN from ALL of the following:
+  * Writing, editing, or creating ANY file
+  * Running ANY shell command (bash, npm, git, etc.)
+  * Writing implementation code (functions, classes, algorithms, TypeScript, JavaScript)
+  * Writing test code or test assertions
+  * Modifying existing source code
+- Your SOLE output is design artifacts as TEXT in your response:
+  * HLD description (text)
+  * DECISION_REGISTER.md content (text, as markdown code block)
+  * LLD description (text, as XML code block)
+- The orchestrator stores your text output via pipeline_store. You do NOT write files.
+- Violating these constraints will cause your design to be REJECTED.
+</Constraints>
 
 ${TECH_STACK_BASELINE_NOTICE}
 ${NO_FLUFF}`,

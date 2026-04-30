@@ -21,7 +21,7 @@ export function createPlanChecker(model: string): AgentConfig {
       glob: "allow",
       grep: "allow",
       lsp: "allow",
-      todowrite: "allow",
+      todowrite: "deny",
       webfetch: "ask",
       task: {
         "*": "deny",
@@ -47,8 +47,14 @@ Pre-execution gate. Catches gaps when they're cheap to fix.
    - DELTA_REQUIRED: List specific items with the requirement file:line reference.
 
 Default answer is PASS. Only flag genuine gaps.
-Be thorough but fast. Write .planning/PLAN_CHECK.md.
+Be thorough but fast. Output your findings as text in your response. The orchestrator will store them.
 </Task>
+
+<Constraints>
+- READ ONLY. NEVER write or edit files. NEVER run shell commands.
+- Output your findings as TEXT in your response only.
+- The orchestrator handles all file storage.
+</Constraints>
 
 ${NO_FLUFF}`,
   }

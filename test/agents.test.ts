@@ -315,6 +315,43 @@ describe("agent prompts", () => {
     const prompt = agents["docs-researcher"].prompt as string
     expect(prompt).toContain("Cite sources")
   })
+
+  it("architect prompt does NOT contain file-write instruction", () => {
+    const prompt = agents["architect"].prompt as string
+    expect(prompt).not.toContain("Write LLD.md to .planning/")
+  })
+
+  it("architect prompt contains Constraints with forbidden actions", () => {
+    const prompt = agents["architect"].prompt as string
+    expect(prompt).toContain("<Constraints>")
+    expect(prompt).toContain("DESIGN ONLY")
+    expect(prompt).toContain("FORBIDDEN")
+    expect(prompt).toContain("Violating these constraints will cause your design to be REJECTED")
+  })
+
+  it("plan-checker prompt does NOT contain file-write instruction", () => {
+    const prompt = agents["plan-checker"].prompt as string
+    expect(prompt).not.toContain("Write .planning/PLAN_CHECK.md")
+  })
+
+  it("plan-checker prompt contains Constraints", () => {
+    const prompt = agents["plan-checker"].prompt as string
+    expect(prompt).toContain("<Constraints>")
+  })
+
+  it("orchestrator Phase 2 contains ARCHITECT OUTPUT VALIDATION", () => {
+    const prompt = agents["Pipeline Orchestrator"].prompt as string
+    expect(prompt).toContain("ARCHITECT OUTPUT VALIDATION")
+    expect(prompt).toContain("DESIGN-ONLY")
+    expect(prompt).toContain("REJECT the architect")
+  })
+
+  it("orchestrator Phase 4 contains hard-gate delegation language", () => {
+    const prompt = agents["Pipeline Orchestrator"].prompt as string
+    expect(prompt).toContain("ALWAYS delegate")
+    expect(prompt).toContain("NEVER write")
+    expect(prompt).toContain("Only coder and coder-pro")
+  })
 })
 
 describe("permissions", () => {
@@ -393,6 +430,22 @@ describe("permissions", () => {
     for (const [key, agent] of Object.entries(agents)) {
       expect(agent.permission).toBeDefined()
       expect(typeof agent.permission).toBe("object")
+    }
+  })
+
+  it("architect/plan-checker/linter/auditor do NOT have todowrite allow", () => {
+    const blockedAgents = ["architect", "plan-checker", "linter", "auditor"]
+    for (const name of blockedAgents) {
+      const perm = agents[name].permission as any
+      expect(perm?.todowrite).not.toBe("allow")
+    }
+  })
+
+  it("orchestrator/docs-researcher/coder/coder-pro still HAVE todowrite allow", () => {
+    const allowedAgents = ["Pipeline Orchestrator", "docs-researcher", "coder", "coder-pro"]
+    for (const name of allowedAgents) {
+      const perm = agents[name].permission as any
+      expect(perm?.todowrite).toBe("allow")
     }
   })
 })

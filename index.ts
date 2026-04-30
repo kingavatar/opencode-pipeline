@@ -20,10 +20,10 @@ function permissionToTools(p: unknown): Record<string, boolean> {
     tools.write = false
     tools.edit = false
   }
-  if (perm.bash === "deny" || (perm.bash && typeof perm.bash === "object" && (perm.bash as Record<string, string>)["*"] === "deny")) {
+  if (perm.bash === "deny") {
     tools.bash = false
   }
-  if (perm.task === "deny" || (perm.task && typeof perm.task === "object" && (perm.task as Record<string, string>)["*"] === "deny")) {
+  if (perm.task === "deny") {
     tools.task = false
   }
   if (perm.webfetch === "deny") tools.webfetch = false
@@ -75,14 +75,30 @@ const PipelinePlugin: Plugin = async (ctx) => {
     config: async (cfg: Record<string, unknown>) => {
       const existingAgents = (cfg.agent ?? {}) as Record<string, AgentConfig>
 
-      // Normalize agents: use tools boolean map (Weave pattern) instead
-      // of extended permission objects to avoid web server crashes
+      // Normalize agents: use tools boolean map (Weave pattern).
+      // Preserve permission object (minus external_directory) for agents
+      // with scoped task/bash so the runtime can enforce scope.
+      // Flat-only agents get permission=undefined (tools map is sufficient).
       const normalized: Record<string, AgentConfig> = {}
       for (const [name, agent] of Object.entries(agents)) {
+        const perm = agent.permission as Record<string, unknown> | undefined
+        let cleanedPermission: Record<string, unknown> | undefined = undefined
+
+        if (perm && typeof perm === "object") {
+          // Strip external_directory — it crashes the web server
+          const { external_directory, ...rest } = perm
+          const hasScopedTask = typeof rest.task === "object" && rest.task !== null
+          const hasScopedBash = typeof rest.bash === "object" && rest.bash !== null
+
+          if (hasScopedTask || hasScopedBash) {
+            cleanedPermission = rest
+          }
+        }
+
         normalized[name] = {
           ...agent,
-          permission: undefined,
-          tools: permissionToTools(agent.permission),
+          permission: cleanedPermission,
+          tools: permissionToTools(cleanedPermission),
         }
       }
 

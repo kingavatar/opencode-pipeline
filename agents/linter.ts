@@ -14,7 +14,7 @@ const reviewPerms = perms({
   grep: "allow",
   lsp: "allow",
   codesearch: "allow",
-  todowrite: "allow",
+  todowrite: "deny",
   webfetch: "ask",
   task: {
     "*": "deny",
